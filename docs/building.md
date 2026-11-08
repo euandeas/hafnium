@@ -45,6 +45,10 @@ they go out with the nightly build.
 
 ## New Fedora release
 
-Set `FEDORA_VERSION` in the [Justfile](../Justfile),
+Installed systems: `hjust upgrade-fedora` checks that Fedora, RPM Fusion, Terra and
+both Dux COPRs have the next release, then runs `dnf system-upgrade`. The Hafnium
+packages are noarch and release-independent, so they carry over as they are.
+
+New ISOs: set `FEDORA_VERSION` in the [Justfile](../Justfile),
 [`build-iso`](../build-scripts/build-iso), [`ks-render`](../build-scripts/ks-render)
 and the workflows, after checking that the Dux COPRs, Terra and RPM Fusion have builds.

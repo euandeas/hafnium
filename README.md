@@ -41,6 +41,7 @@ override it.
 hjust                 # list helper recipes
 hjust update          # dnf + flatpak + firmware
 hjust sync-greeter    # copy your DMS theme to the login screen
+hjust upgrade-fedora  # move to the next Fedora release once all repos support it
 ```
 
 Put niri changes in `~/.config/niri/local.kdl`.

@@ -57,11 +57,14 @@ jobs:
 
       - name: Publish to the rolling "latest" release
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           gh release view latest >/dev/null 2>&1 || \
             gh release create latest --title "Hafnium (latest)" --latest \
               --notes "Rolling build of the Hafnium installer ISOs from main. Each ISO is a Fedora netinstall with the Hafnium kickstart embedded, so it needs internet access while installing."
           gh release upload latest out/*.iso out/*.sha256 out/*.ks --clobber
+          # Point the tag at the commit these ISOs were built from
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/latest" -f sha="${GITHUB_SHA}" -F force=true >/dev/null
+          gh release edit latest --notes "Rolling build of the Hafnium installer ISOs, built from ${GITHUB_SHA::7} on $(date -u +%Y-%m-%d). Each ISO is a Fedora netinstall with the Hafnium kickstart embedded, so it needs internet access while installing."
