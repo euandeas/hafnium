@@ -38,7 +38,7 @@ Requires:       greetd-selinux
 # --- Default apps: Ghostty is the default terminal -----------------------------
 Requires:       ghostty
 Requires:       xdg-terminal-exec
-Requires:       nautilus
+Requires:       dux-files
 
 # --- Audio, Bluetooth, power ---------------------------------------------------
 Requires:       pipewire
@@ -161,6 +161,8 @@ fi
 %{_datadir}/hafnium/just/
 %{_datadir}/hafnium/greetd/
 %{_datadir}/xdg-terminal-exec/niri-xdg-terminals.list
+%{_datadir}/applications/niri-mimeapps.list
+%config(noreplace) %{_sysconfdir}/xdg/xdg-desktop-portal/niri-portals.conf
 %dir %{_datadir}/dms
 %{_datadir}/dms/cli-policy.json
 %{_prefix}/lib/systemd/resolved.conf.d/90-hafnium-dns.conf

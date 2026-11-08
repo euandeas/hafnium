@@ -1,0 +1,50 @@
+# Building
+
+## How it fits together
+
+- **ISO:** the Fedora netinstall ISO with a [kickstart](../kickstart) embedded by `mkksiso`.
+- **Packages:** [`hafnium.spec`](../hafnium.spec) (files from [`files/`](../files)) plus
+  `hafnium-dots` from [hdots](https://github.com/euandeas/hdots). Both are published as
+  a dnf repo on GitHub Pages: <https://euandeas.github.io/hafnium/repo/>.
+- **Updates:** installed systems pull new packages from that repo with `dnf upgrade`.
+
+Packages are versioned `0.1.0-<commits>.git<sha>`, so every push is an upgrade.
+They're unsigned (`gpgcheck=0`) and served over HTTPS.
+
+## Workflows
+
+| Workflow | Runs on | Does |
+|---|---|---|
+| [`check.yml`](../.github/workflows/check.yml) | PRs, other branches, hdots pushes | [`build-scripts/check`](../build-scripts/check), see below |
+| [`repo.yml`](../.github/workflows/repo.yml) | push to `main`, nightly, manual | runs the checks, then publishes the package repo |
+| [`build-iso.yml`](../.github/workflows/build-iso.yml) | kickstart changes, weekly, manual | builds both ISOs into the `latest` release |
+
+`build-scripts/check` has five checks:
+
+- builds the RPMs
+- validates the kickstarts
+- dry-runs both install transactions against the real repos
+- deploys the default dotfiles in a throwaway `$HOME` and runs `niri validate`
+- lints the scripts
+
+For hdots changes to publish immediately, add a `HAFNIUM_DISPATCH_TOKEN` secret to
+hdots: a fine-grained token with *Actions: Read and write* on this repo. Otherwise
+they go out with the nightly build.
+
+## Locally
+
+| Command | Does |
+|---|---|
+| `just check` | all checks, in a Fedora container |
+| `just ks` | render and validate the kickstarts |
+| `just repo` | build the RPMs and repo into `out/repo` |
+| `just iso-container <hafnium\|hafnium-nvidia>` | build an ISO into `out/` |
+| `just vm <variant>` | boot an ISO in a UEFI QEMU VM |
+
+`just check` and `just repo` expect hdots checked out at `../hdots`.
+
+## New Fedora release
+
+Set `FEDORA_VERSION` in the [Justfile](../Justfile),
+[`build-iso`](../build-scripts/build-iso), [`ks-render`](../build-scripts/ks-render)
+and the workflows, after checking that the Dux COPRs, Terra and RPM Fusion have builds.
