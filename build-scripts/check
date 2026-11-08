@@ -215,6 +215,11 @@ check_lint() {
              "$hdots"/dots/dms/*.json; do
         python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$f" || { echo "lint: bad JSON: $f"; ok=1; }
     done
+    if command -v ghostty >/dev/null; then
+        ghostty +validate-config --config-file="$hdots/dots/ghostty/config" || { echo "lint: bad Ghostty config"; ok=1; }
+    elif [[ "$STRICT" == 1 ]]; then
+        echo "lint: ghostty not installed"; ok=1
+    fi
     if command -v just >/dev/null; then
         just --justfile "$hafnium/Justfile" --list >/dev/null || ok=1
         just --justfile "$hafnium/files/usr/share/hafnium/just/00-start.just" --list >/dev/null || ok=1
