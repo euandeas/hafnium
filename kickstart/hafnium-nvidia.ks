@@ -32,5 +32,5 @@ akmods --force --kernels "${KVER}" || echo "akmods build failed; akmods.service 
 dracut --force --kver "${KVER}"   # runs after the common %post, so the Plymouth theme is kept
 
 # Secure Boot: modules are signed with a key akmods generated on this machine.
-# It must be enrolled once with `hjust enroll-secure-boot-key`.
+# It must be enrolled once with `hafnium enroll-secure-boot-key`.
 %end

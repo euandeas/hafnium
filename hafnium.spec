@@ -78,7 +78,7 @@ Hafnium is a minimal, non-atomic Fedora desktop built on niri and the Dux
 Modular Shell (DMS), with Ghostty as the default terminal. This metapackage
 pulls in the desktop and ships Hafnium's system configuration: greetd with
 dms-greeter, encrypted DNS, dnf tuning and automatic updates, the Flexoki light and dark themes
-and wallpapers, a quiet Flexoki boot splash, presets, the default terminal, and the hjust helper.
+and wallpapers, a quiet Flexoki boot splash, presets, the default terminal, and the hafnium helper command.
 
 %package repos
 Summary:        Package repositories used by Hafnium
@@ -152,7 +152,7 @@ fi
 
 %files
 %doc README.md
-%{_bindir}/hjust
+%{_bindir}/hafnium
 %{_unitdir}/hafnium-flathub.service
 %dir %{_unitdir}/greetd.service.d
 %{_unitdir}/greetd.service.d/50-hafnium.conf

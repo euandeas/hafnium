@@ -205,7 +205,7 @@ check_lint() {
     if command -v shellcheck >/dev/null; then
         shellcheck -S warning \
             "$hafnium"/build-scripts/{build-iso,build-repo,check,ci-setup,ks-render} \
-            "$hafnium/files/usr/bin/hjust" "$hafnium/files/etc/profile.d/hafnium-starship.sh" \
+            "$hafnium/files/usr/bin/hafnium" "$hafnium/files/etc/profile.d/hafnium-starship.sh" \
             "$hdots/bin/hafnium-dots" || ok=1
     else
         echo "lint: shellcheck not installed, skipped"

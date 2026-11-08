@@ -45,7 +45,7 @@ they go out with the nightly build.
 
 ## New Fedora release
 
-Installed systems: `hjust upgrade-fedora` checks that Fedora, RPM Fusion, Terra and
+Installed systems: `hafnium upgrade-fedora` checks that Fedora, RPM Fusion, Terra and
 both Dux COPRs have the next release, then runs `dnf system-upgrade`. The Hafnium
 packages are noarch and release-independent, so they carry over as they are.
 

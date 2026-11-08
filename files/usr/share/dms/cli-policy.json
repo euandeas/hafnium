@@ -5,5 +5,5 @@
     "greeter enable",
     "greeter uninstall"
   ],
-  "message": "Hafnium manages the greeter. Use `hjust sync-greeter` to theme the login screen."
+  "message": "Hafnium manages the greeter. Use `hafnium sync-greeter` to theme the login screen."
 }

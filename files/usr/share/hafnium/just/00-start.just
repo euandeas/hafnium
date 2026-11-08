@@ -1,7 +1,7 @@
-# hjust: Hafnium helper recipes. Run `hjust` to pick one.
+# hafnium: Hafnium helper recipes. Run `hafnium` to pick one, or `hafnium --list`.
 
 default:
-    @hjust --choose
+    @hafnium --choose
 
 # Update the whole system: dnf (which includes Hafnium and hdots), flatpaks, firmware
 update:
@@ -65,7 +65,7 @@ update-dotfiles:
 dotfiles-status:
     hafnium-dots status
 
-# Restore one dotfile to its default, e.g. `hjust reset-dotfile ~/.config/ghostty/config`
+# Restore one dotfile to its default, e.g. `hafnium reset-dotfile ~/.config/ghostty/config`
 reset-dotfile TARGET:
     hafnium-dots reset "{{ TARGET }}"
 
@@ -86,7 +86,7 @@ toggle-dotfiles-service:
 sync-greeter:
     dms-greeter sync
 
-# Bootstrap a personal mise dotfiles repo on top of Hafnium (e.g. `hjust bootstrap-dotfiles euandeas/.dotfiles`)
+# Bootstrap a personal mise dotfiles repo on top of Hafnium (e.g. `hafnium bootstrap-dotfiles euandeas/.dotfiles`)
 bootstrap-dotfiles REPO:
     #!/usr/bin/bash
     set -euo pipefail

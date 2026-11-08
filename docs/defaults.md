@@ -4,7 +4,7 @@
 
 | Package | Ships |
 |---|---|
-| `hafnium` | The desktop: niri, DMS, dms-greeter on greetd, Ghostty, Dux Files, PipeWire, Flatpak, mise. Also the system defaults below and `hjust` |
+| `hafnium` | The desktop: niri, DMS, dms-greeter on greetd, Ghostty, Dux Files, PipeWire, Flatpak, mise. Also the system defaults below and the `hafnium` command |
 | `hafnium-repos` | Repo files for this repo's package repo and the Dux COPRs; pulls in the RPM Fusion and Terra release packages |
 | `hafnium-codecs` | `ffmpeg`, GStreamer codecs, `mesa-va-drivers-freeworld` |
 | `hafnium-nvidia` | `akmod-nvidia` from RPM Fusion, nouveau blacklist, early KMS |

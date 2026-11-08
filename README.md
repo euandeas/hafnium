@@ -15,7 +15,7 @@ Download an ISO from [Releases](../../releases/tag/latest):
 Write it to a USB stick and boot it. Anaconda asks for disk, language and user as
 usual. The rest is set by the kickstart, and it needs internet access.
 
-**NVIDIA with Secure Boot:** run `hjust enroll-secure-boot-key` once, reboot and
+**NVIDIA with Secure Boot:** run `hafnium enroll-secure-boot-key` once, reboot and
 choose *Enroll MOK*.
 
 ## What you get
@@ -29,7 +29,7 @@ choose *Enroll MOK*.
 No apps beyond that. Add your own with a mise dotfiles repo:
 
 ```sh
-hjust bootstrap-dotfiles euandeas/.dotfiles
+hafnium bootstrap-dotfiles euandeas/.dotfiles
 ```
 
 See [docs/defaults.md](docs/defaults.md) for what each package ships and how to
@@ -38,10 +38,10 @@ override it.
 ## Using it
 
 ```sh
-hjust                 # list helper recipes
-hjust update          # dnf + flatpak + firmware
-hjust sync-greeter    # copy your DMS theme to the login screen
-hjust upgrade-fedora  # move to the next Fedora release once all repos support it
+hafnium                 # pick a helper recipe (hafnium --list to list them)
+hafnium update          # dnf + flatpak + firmware
+hafnium sync-greeter    # copy your DMS theme to the login screen
+hafnium upgrade-fedora  # move to the next Fedora release once all repos support it
 ```
 
 Put niri changes in `~/.config/niri/local.kdl`.
