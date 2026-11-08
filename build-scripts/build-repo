@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Build the hafnium and hafnium-dots RPMs and turn them into a dnf repo.
+#
+#   build-scripts/build-repo <hdots-checkout> <output-dir>
+#
+# Output: <output-dir>/repo/{*.rpm,repodata/}, ready to serve at
+# https://euandeas.github.io/hafnium/repo/
+# Needs: git, make, rpm-build, systemd-rpm-macros, createrepo_c. Both checkouts
+# need full git history: the Release number is the commit count.
+set -euo pipefail
+
+hdots="$(readlink -f "${1:?usage: build-repo <hdots-checkout> <output-dir>}")"
+out="$(readlink -m "${2:?usage: build-repo <hdots-checkout> <output-dir>}")"
+hafnium="$(dirname "$(readlink -f "$0")")/.."
+
+rm -rf "${out}"
+mkdir -p "${out}/srpm" "${out}/repo"
+
+for src in "$hafnium" "$hdots"; do
+    if [[ "$(git -C "$src" rev-parse --is-shallow-repository)" == true ]]; then
+        echo "build-repo: $src is a shallow clone; Release numbers would not increase" >&2
+        exit 1
+    fi
+    make -C "$src" srpm outdir="${out}/srpm"
+done
+
+for srpm in "${out}"/srpm/*.src.rpm; do
+    rpmbuild --rebuild "$srpm" --define "_rpmdir ${out}/rpms" --define "_topdir ${out}/rpmbuild"
+done
+
+find "${out}/rpms" -name '*.rpm' -exec cp -t "${out}/repo" {} +
+createrepo_c "${out}/repo"
+ls -1 "${out}/repo"

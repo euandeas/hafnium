@@ -1,0 +1,86 @@
+name: Build package repo
+
+# Builds the hafnium and hafnium-dots RPMs and publishes them as a dnf repo on
+# GitHub Pages: https://euandeas.github.io/hafnium/repo/
+# Installers and installed systems pull Hafnium updates from there.
+#
+# hdots is a separate repo. Its own workflow triggers this one after a push to its
+# main branch if it has a HAFNIUM_DISPATCH_TOKEN secret; otherwise run this by
+# hand (`gh workflow run repo.yml -R euandeas/hafnium`) or wait for the nightly run.
+# Nothing is published unless check.yml passes.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  check:
+    uses: ./.github/workflows/check.yml
+
+  build:
+    needs: check
+    runs-on: ubuntu-24.04
+    container:
+      image: registry.fedoraproject.org/fedora:45
+    steps:
+      - name: Install tools
+        run: dnf install -y --setopt=install_weak_deps=False git-core make rpm-build systemd-rpm-macros createrepo_c rpmlint
+
+      - name: Checkout hafnium
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Release = commit count, so full history is needed
+
+      - name: Checkout hdots
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/hdots
+          path: .hdots
+          fetch-depth: 0
+
+      - name: Build RPMs and repo
+        run: |
+          git config --global --add safe.directory '*'
+          build-scripts/build-repo .hdots _site
+
+      - name: Lint
+        run: rpmlint _site/repo/*.rpm || true
+
+      - name: Add an index page
+        run: |
+          {
+            echo '<!doctype html><meta charset="utf-8"><title>Hafnium repo</title>'
+            echo '<h1>Hafnium dnf repo</h1><p>Used by the Hafnium installer and <code>hafnium-repos</code>.</p><ul>'
+            for f in _site/repo/*.rpm; do n="$(basename "$f")"; echo "<li><a href=\"repo/$n\">$n</a></li>"; done
+            echo '</ul>'
+          } > _site/index.html
+          rm -rf _site/srpm _site/rpms
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

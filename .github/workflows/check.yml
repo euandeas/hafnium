@@ -1,0 +1,55 @@
+name: Check
+
+# Builds the packages, validates the kickstarts, dry-runs the full install
+# transaction against the real repos, tests the default dotfiles end to end
+# (mise + DMS + niri validate) and lints scripts. See build-scripts/check.
+# Also called by repo.yml so nothing is published unless this passes.
+
+on:
+  push:
+    branches-ignore: [main] # main is covered by repo.yml, which calls this
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    container:
+      image: registry.fedoraproject.org/fedora:45
+    steps:
+      - name: Install git
+        run: dnf install -y git-core
+
+      - name: Checkout hafnium
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/hafnium
+          # Use the commit being checked when this is the hafnium repo, otherwise main.
+          ref: ${{ github.event.repository.name == 'hafnium' && github.sha || 'main' }}
+          path: hafnium
+          fetch-depth: 0
+
+      - name: Checkout hdots
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/hdots
+          ref: ${{ github.event.repository.name == 'hdots' && github.sha || 'main' }}
+          path: hdots
+          fetch-depth: 0
+
+      - name: Install tools
+        run: hafnium/build-scripts/ci-setup
+
+      - name: Check
+        env:
+          STRICT: "1"
+        run: hafnium/build-scripts/check hdots out/check
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-logs
+          path: out/check/*.log
+          retention-days: 7

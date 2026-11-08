@@ -1,0 +1,10 @@
+enable greetd.service
+enable hafnium-flathub.service
+enable power-profiles-daemon.service
+enable bluetooth.service
+enable dnf5-automatic.timer
+enable systemd-resolved.service
+# Don't hold up boot waiting for the network
+disable NetworkManager-wait-online.service
+# Flathub only (hafnium-flathub.service), no Fedora OCI flatpak remote
+disable flatpak-add-fedora-repos.service

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Build a Hafnium installer ISO: the Fedora Everything netinstall ISO with a
+# Hafnium kickstart embedded by mkksiso (from lorax).
+#
+#   build-scripts/build-iso <hafnium|hafnium-nvidia> [output-dir]
+#
+# Env: FEDORA_VERSION (default 45), ARCH (default x86_64), CACHE_DIR (default ./cache)
+# Needs: curl, sha256sum, mkksiso (dnf install lorax), xorriso; ksvalidator optional.
+set -euo pipefail
+
+variant="${1:?usage: build-iso <hafnium|hafnium-nvidia> [output-dir]}"
+outdir="${2:-out}"
+FEDORA_VERSION="${FEDORA_VERSION:-45}"
+ARCH="${ARCH:-x86_64}"
+CACHE_DIR="${CACHE_DIR:-cache}"
+here="$(dirname "$(readlink -f "$0")")"
+
+case "$variant" in
+    hafnium | hafnium-nvidia) ;;
+    *) echo "unknown variant: $variant" >&2; exit 2 ;;
+esac
+
+mkdir -p "$outdir" "$CACHE_DIR"
+
+# 1. Fetch and verify the upstream netinstall ISO
+base="https://dl.fedoraproject.org/pub/fedora/linux/releases/${FEDORA_VERSION}/Everything/${ARCH}/iso"
+listing="$(curl -fsSL "${base}/")"
+iso_name="$(grep -oE "Fedora-Everything-netinst-${ARCH}-${FEDORA_VERSION}-[0-9.]+\.iso" <<<"$listing" | sort -uV | tail -n1)"
+sum_name="$(grep -oE "Fedora-Everything-${FEDORA_VERSION}-[0-9.]+-${ARCH}-CHECKSUM" <<<"$listing" | sort -uV | tail -n1)"
+[[ -n "$iso_name" && -n "$sum_name" ]] || { echo "could not find netinstall ISO under ${base}" >&2; exit 1; }
+
+if [[ ! -f "${CACHE_DIR}/${iso_name}" ]]; then
+    curl -fL --retry 3 -o "${CACHE_DIR}/${iso_name}.part" "${base}/${iso_name}"
+    mv "${CACHE_DIR}/${iso_name}.part" "${CACHE_DIR}/${iso_name}"
+fi
+curl -fsSL -o "${CACHE_DIR}/${sum_name}" "${base}/${sum_name}"
+(cd "$CACHE_DIR" && grep -E "^SHA256 \(${iso_name//./\\.}\)" "$sum_name" | sha256sum -c -)
+
+# 2. Render the kickstart
+ks="${outdir}/${variant}.ks"
+"${here}/ks-render" "$variant" "$ks"
+
+# 3. Embed it. mkksiso adds inst.ks=hd:LABEL=<volid>:/<file> to every boot entry.
+volid="$(echo "${variant}-${FEDORA_VERSION}" | tr '[:lower:]' '[:upper:]')"   # e.g. HAFNIUM-NVIDIA-45
+iso="${outdir}/${variant}-${FEDORA_VERSION}-${ARCH}.iso"
+rm -f "$iso"
+mkksiso --ks "$ks" -V "$volid" "${CACHE_DIR}/${iso_name}" "$iso"
+
+(cd "$outdir" && sha256sum "$(basename "$iso")" > "$(basename "$iso").sha256")
+echo "built ${iso}"

@@ -1,0 +1,3 @@
+# Hafnium: Ghostty is the default terminal under niri (XDG_CURRENT_DESKTOP=niri).
+# Override per-user in ~/.config/xdg-terminals.list, or machine-wide in /etc/xdg/xdg-terminals.list
+com.mitchellh.ghostty.desktop

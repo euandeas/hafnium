@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+exec just --justfile /usr/share/hafnium/just/00-start.just --working-directory "$HOME" "$@"

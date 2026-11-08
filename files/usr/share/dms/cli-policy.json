@@ -1,0 +1,9 @@
+{
+  "policy_version": 1,
+  "blocked_commands": [
+    "greeter install",
+    "greeter enable",
+    "greeter uninstall"
+  ],
+  "message": "Hafnium manages the greeter. Use `hjust sync-greeter` to theme the login screen."
+}

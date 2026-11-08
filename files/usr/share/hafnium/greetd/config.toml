@@ -1,0 +1,11 @@
+# Hafnium greetd config. greetd.service is pointed here by a drop-in
+# (/usr/lib/systemd/system/greetd.service.d/50-hafnium.conf).
+# To customise it, copy this file to /etc/greetd/config.toml and remove the drop-in's
+# --config argument, or add your own drop-in under /etc/systemd/system/greetd.service.d/.
+
+[terminal]
+vt = 1
+
+[default_session]
+user = "greeter"
+command = "/usr/bin/dms-greeter --command niri --cache-dir /var/cache/dms-greeter"

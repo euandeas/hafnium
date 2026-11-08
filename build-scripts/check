@@ -1,0 +1,225 @@
+#!/usr/bin/env bash
+# Validate Hafnium and hdots before anything is published.
+#
+#   build-scripts/check <hdots-checkout> [work-dir]
+#
+#   packages   build all RPMs + the dnf repo (build-repo), rpmlint (advisory)
+#   kickstart  render and ksvalidator both kickstarts
+#   resolve    dry-run each kickstart's %packages against the real repos plus the
+#              freshly built RPMs, the same transaction Anaconda will do
+#   dotfiles   run hafnium-dots in a throwaway $HOME (mise layer, seeds, DMS
+#              defaults), then `niri validate` the result
+#   lint       shellcheck, JSON syntax, Justfile syntax
+#
+# Locally a check is skipped when its tools are missing. CI sets STRICT=1 to make
+# a missing tool a failure. Env: FEDORA_VERSION (default 45), CHECKS (space list).
+set -uo pipefail
+
+hdots="$(readlink -f "${1:?usage: check <hdots-checkout> [work-dir]}")"
+work="$(readlink -m "${2:-out/check}")"
+hafnium="$(readlink -f "$(dirname "$(readlink -f "$0")")/..")"
+FEDORA_VERSION="${FEDORA_VERSION:-45}"
+CHECKS="${CHECKS:-packages kickstart resolve dotfiles lint}"
+STRICT="${STRICT:-0}"
+
+failed=() skipped=() passed=()
+group() { if [[ -n "${GITHUB_ACTIONS:-}" ]]; then echo "::group::$*"; else echo "=== $*"; fi; }
+endgroup() { if [[ -n "${GITHUB_ACTIONS:-}" ]]; then echo "::endgroup::"; fi; }
+
+# need <check> <tool>...: true if all tools exist; otherwise skip (or fail when STRICT)
+need() {
+    local check="$1" t missing=()
+    shift
+    for t in "$@"; do command -v "$t" >/dev/null || missing+=("$t"); done
+    ((${#missing[@]} == 0)) && return 0
+    if [[ "$STRICT" == 1 ]]; then
+        failed+=("$check (missing ${missing[*]})")
+    else
+        skipped+=("$check (missing ${missing[*]})")
+    fi
+    return 1
+}
+
+run() { # run <check> <function>
+    group "$1"
+    if "$2"; then passed+=("$1"); else failed+=("$1"); fi
+    endgroup
+}
+
+rm -rf "$work"
+mkdir -p "$work"
+
+# --- packages ------------------------------------------------------------------
+check_packages() {
+    "$hafnium/build-scripts/build-repo" "$hdots" "$work/build" || return 1
+    if command -v rpmlint >/dev/null; then
+        rpmlint "$work"/build/repo/*.rpm || echo "rpmlint: findings above are advisory"
+    fi
+}
+
+# --- kickstart -----------------------------------------------------------------
+check_kickstart() {
+    local v ok=0
+    for v in hafnium hafnium-nvidia; do
+        FEDORA_VERSION="$FEDORA_VERSION" "$hafnium/build-scripts/ks-render" "$v" "$work/ks/$v.ks" || ok=1
+    done
+    return $ok
+}
+
+# --- resolve -------------------------------------------------------------------
+# Everything the kickstart's %packages asks for, plus what Anaconda adds itself.
+ANACONDA_EXTRAS=(kernel grub2-efi-x64 shim-x64 grub2-pc efibootmgr btrfs-progs lvm2 cryptsetup langpacks-en)
+
+write_repos() { # write_repos <dir>: the repos Anaconda gets from the kickstart
+    local d="$1"
+    mkdir -p "$d"
+    cat > "$d/check.repo" <<EOF
+[fedora]
+name=Fedora \$releasever
+metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-\$releasever&arch=\$basearch
+gpgcheck=0
+[updates]
+name=Fedora \$releasever updates
+metalink=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f\$releasever&arch=\$basearch
+gpgcheck=0
+[rpmfusion-free]
+name=RPM Fusion free
+metalink=https://mirrors.rpmfusion.org/metalink?repo=free-fedora-\$releasever&arch=\$basearch
+gpgcheck=0
+[rpmfusion-free-updates]
+name=RPM Fusion free updates
+metalink=https://mirrors.rpmfusion.org/metalink?repo=free-fedora-updates-released-\$releasever&arch=\$basearch
+gpgcheck=0
+[rpmfusion-nonfree]
+name=RPM Fusion nonfree
+metalink=https://mirrors.rpmfusion.org/metalink?repo=nonfree-fedora-\$releasever&arch=\$basearch
+gpgcheck=0
+[rpmfusion-nonfree-updates]
+name=RPM Fusion nonfree updates
+metalink=https://mirrors.rpmfusion.org/metalink?repo=nonfree-fedora-updates-released-\$releasever&arch=\$basearch
+gpgcheck=0
+[terra]
+name=Terra
+baseurl=https://repos.fyralabs.com/terra\$releasever
+gpgcheck=0
+EOF
+    # Dux COPRs, exactly as hafnium-repos ships them
+    cp "$hafnium"/repos/_copr*.repo "$d/"
+}
+
+check_resolve() {
+    compgen -G "$work/build/repo/hafnium-[0-9]*.rpm" >/dev/null || { echo "resolve: needs the packages check"; return 1; }
+    [[ -f "$work/ks/hafnium.ks" ]] || { echo "resolve: needs the kickstart check"; return 1; }
+    local v ok=0 root="$work/resolve-root" reposdir="$work/resolve-repos" log
+    write_repos "$reposdir"
+    for v in hafnium hafnium-nvidia; do
+        local install=() exclude=()
+        while read -r line; do
+            case "$line" in
+                "" | "#"*) ;;
+                -*) exclude+=("${line#-}") ;;
+                *) install+=("$line") ;;
+            esac
+        done < <(sed -n '/^%packages/,/^%end/{/^%/d;p}' "$work/ks/$v.ks")
+        # The freshly built RPMs stand in for the GitHub Pages repo. hafnium-nvidia
+        # only goes into the NVIDIA transaction.
+        local rpm built=()
+        for rpm in "$work"/build/repo/hafnium*.rpm; do
+            [[ "$rpm" == */hafnium-nvidia-[0-9]* && "$v" != hafnium-nvidia ]] && continue
+            built+=("$rpm")
+        done
+        rm -rf "$root" && mkdir -p "$root"
+        log="$work/resolve-$v.log"
+        echo "resolve: $v (${#install[@]} specs, excluding: ${exclude[*]:-none})"
+        dnf install --assumeno --installroot="$root" --releasever="$FEDORA_VERSION" \
+            --setopt=reposdir="$reposdir" --setopt=install_weak_deps=True \
+            --setopt=gpgcheck=0 --setopt=cachedir="$work/dnf-cache" \
+            ${exclude:+--exclude="$(IFS=,; echo "${exclude[*]}")"} \
+            "${install[@]}" "${ANACONDA_EXTRAS[@]}" "${built[@]}" >"$log" 2>&1
+        if grep -q 'Operation aborted by the user' "$log"; then
+            grep -E 'Total size of inbound|^Install +[0-9]+ packages' "$log" | sed "s/^/resolve: $v: /"
+        else
+            echo "resolve: $v does NOT resolve:"
+            grep -vE '^(Updating and loading|Repositories loaded|  *[a-z0-9]+ +[0-9]|\s*$)' "$log" | tail -25
+            ok=1
+        fi
+    done
+    return $ok
+}
+
+# --- dotfiles ------------------------------------------------------------------
+check_dotfiles() {
+    local t="$work/dotfiles"
+    mkdir -p "$t/home" "$t/sys/conf.d"
+    cp -a "$hdots/dots" "$t/dots"
+    # Point the shipped paths at the copy
+    sed "s|/usr/share/hafnium/dots|$t/dots|g" "$hdots/mise/hafnium.toml" > "$t/sys/conf.d/hafnium.toml"
+    sed -i "s|/usr/share/hafnium/dots/niri|$t/dots/niri|g" "$t/dots/niri/config.kdl"
+    sed "s|^HAFNIUM_CONF=.*|HAFNIUM_CONF=$t/sys/conf.d/hafnium.toml|" "$hdots/bin/hafnium-dots" > "$t/hafnium-dots"
+    chmod +x "$t/hafnium-dots"
+
+    (
+        set -e
+        export HOME="$t/home" XDG_CONFIG_HOME="$t/home/.config" \
+            MISE_SYSTEM_DIR="$t/sys" MISE_STATE_DIR="$t/state" MISE_DATA_DIR="$t/data" MISE_CACHE_DIR="$t/cache"
+        cd "$HOME"
+        echo "dotfiles: first login"
+        "$t/hafnium-dots" apply
+        for f in .config/niri/config.kdl .config/niri/local.kdl .config/ghostty/config \
+                 .config/dms/settings.json .local/state/dms/session.json; do
+            [[ -e "$f" ]] || { echo "dotfiles: $f was not deployed"; exit 1; }
+        done
+        if command -v dms >/dev/null; then
+            [[ -e .config/niri/dms/binds.kdl ]] || { echo "dotfiles: DMS did not generate binds.kdl"; exit 1; }
+        else
+            echo "dotfiles: dms not installed, DMS defaults not generated"
+        fi
+        echo "dotfiles: second login (must change nothing)"
+        "$t/hafnium-dots" apply | grep -q 'everything is in place' || { echo "dotfiles: second apply was not a no-op"; exit 1; }
+        echo "dotfiles: niri validate"
+        niri validate -c .config/niri/config.kdl 2>&1 | grep -vE 'optional include not found' | tail -3
+        niri validate -c .config/niri/config.kdl >/dev/null 2>&1
+    )
+}
+
+# --- lint ----------------------------------------------------------------------
+check_lint() {
+    local ok=0 f
+    if command -v shellcheck >/dev/null; then
+        shellcheck -S warning \
+            "$hafnium"/build-scripts/{build-iso,build-repo,check,ci-setup,ks-render} \
+            "$hafnium/files/usr/bin/hjust" "$hdots/bin/hafnium-dots" || ok=1
+    else
+        echo "lint: shellcheck not installed, skipped"
+    fi
+    for f in "$hafnium/files/usr/share/hafnium/themes/flexoki.json" "$hafnium/files/usr/share/dms/cli-policy.json" \
+             "$hdots"/dots/dms/*.json; do
+        python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$f" || { echo "lint: bad JSON: $f"; ok=1; }
+    done
+    if command -v just >/dev/null; then
+        just --justfile "$hafnium/Justfile" --list >/dev/null || ok=1
+        just --justfile "$hafnium/files/usr/share/hafnium/just/00-start.just" --list >/dev/null || ok=1
+    else
+        echo "lint: just not installed, Justfiles not checked"
+    fi
+    return $ok
+}
+
+for c in $CHECKS; do
+    case "$c" in
+        packages)  need packages make rpmbuild createrepo_c git && run packages check_packages ;;
+        kickstart) need kickstart ksvalidator && run kickstart check_kickstart ;;
+        resolve)   need resolve dnf && run resolve check_resolve ;;
+        dotfiles)  need dotfiles mise jq niri && run dotfiles check_dotfiles ;;
+        lint)      need lint python3 && run lint check_lint ;;
+        *) echo "unknown check: $c" >&2; failed+=("$c") ;;
+    esac
+done
+
+echo
+echo "passed:  ${passed[*]:-none}"
+((${#skipped[@]})) && printf 'skipped: %s\n' "${skipped[@]}"
+if ((${#failed[@]})); then
+    printf 'FAILED:  %s\n' "${failed[@]}"
+    exit 1
+fi

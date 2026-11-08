@@ -1,0 +1,17 @@
+[Unit]
+Description=Add the Flathub remote
+Documentation=https://github.com/euandeas/hafnium
+ConditionPathExists=!/var/lib/flatpak/.hafnium-flathub
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+ExecStartPost=/usr/bin/touch /var/lib/flatpak/.hafnium-flathub
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
