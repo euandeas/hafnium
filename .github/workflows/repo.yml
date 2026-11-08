@@ -41,12 +41,12 @@ jobs:
         run: dnf install -y --setopt=install_weak_deps=False git-core make rpm-build systemd-rpm-macros createrepo_c rpmlint
 
       - name: Checkout hafnium
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Release = commit count, so full history is needed
 
       - name: Checkout hdots
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ github.repository_owner }}/hdots
           path: .hdots
