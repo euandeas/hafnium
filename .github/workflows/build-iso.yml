@@ -61,6 +61,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          export GH_REPO="$GITHUB_REPOSITORY"
           gh release view latest >/dev/null 2>&1 || \
             gh release create latest --title "Hafnium (latest)" --latest \
               --notes "Rolling build of the Hafnium installer ISOs from main. Each ISO is a Fedora netinstall with the Hafnium kickstart embedded, so it needs internet access while installing."
