@@ -175,7 +175,7 @@ check_dotfiles() {
         echo "dotfiles: first login"
         "$t/hafnium-dots" apply
         for f in .config/niri/config.kdl .config/niri/local.kdl .config/ghostty/config \
-                 .config/dms/settings.json .local/state/dms/session.json; do
+                 .config/dms/settings.json .config/dms/clsettings.json .local/state/dms/session.json; do
             [[ -e "$f" ]] || { echo "dotfiles: $f was not deployed"; exit 1; }
         done
         if command -v dms >/dev/null; then
