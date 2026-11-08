@@ -58,6 +58,7 @@ Requires:       adw-gtk3-theme
 Requires:       papirus-icon-theme
 Requires:       default-fonts
 Requires:       adwaita-sans-fonts
+Requires:       commitmono-nerd-fonts
 Requires:       google-noto-color-emoji-fonts
 
 # --- System defaults: auto-updates, quiet boot -------------------------------
@@ -124,6 +125,9 @@ cp -a files/. %{buildroot}/
 install -d %{buildroot}%{_sysconfdir}/yum.repos.d
 install -pm0644 repos/*.repo %{buildroot}%{_sysconfdir}/yum.repos.d/
 cp -a nvidia/. %{buildroot}/
+install -d %{buildroot}%{_sysconfdir}/fonts/conf.d
+ln -s ../../..%{_datadir}/fontconfig/conf.avail/50-hafnium-monospace.conf \
+    %{buildroot}%{_sysconfdir}/fonts/conf.d/50-hafnium-monospace.conf
 
 %post
 %systemd_post hafnium-flathub.service
@@ -167,6 +171,8 @@ fi
 %{_datadir}/xdg-terminal-exec/niri-xdg-terminals.list
 %{_datadir}/applications/niri-mimeapps.list
 %{_datadir}/glib-2.0/schemas/90_hafnium.gschema.override
+%{_datadir}/fontconfig/conf.avail/50-hafnium-monospace.conf
+%{_sysconfdir}/fonts/conf.d/50-hafnium-monospace.conf
 %config(noreplace) %{_sysconfdir}/profile.d/hafnium-starship.sh
 %config(noreplace) %{_sysconfdir}/xdg/xdg-desktop-portal/niri-portals.conf
 %dir %{_datadir}/dms

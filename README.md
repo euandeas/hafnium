@@ -23,7 +23,7 @@ choose *Enroll MOK*.
 - Fedora Custom OS + `@standard` + `@networkmanager-submodules`
 - niri, DMS, the dms-greeter login screen, Ghostty, Dux Files, Flatpak (Flathub), mise
 - RPM Fusion, Terra, full codecs, encrypted DNS, automatic updates, a quiet boot
-- Flexoki light/dark theme and wallpapers, Papirus icons, the Starship prompt
+- Flexoki light/dark theme and wallpapers, Papirus icons, Commit Mono, the Starship prompt
 - Default dotfiles from [hdots](https://github.com/euandeas/hdots)
 
 No apps beyond that. Add your own with a mise dotfiles repo:
