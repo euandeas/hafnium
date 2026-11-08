@@ -1,2 +1,61 @@
 #!/usr/bin/bash
-exec just --justfile /usr/share/hafnium/just/00-start.just --working-directory "$HOME" "$@"
+# hafnium: Hafnium's helper command. Recipes live in /usr/share/hafnium/just/00-start.just.
+#   hafnium              overview
+#   hafnium help         all commands
+#   hafnium choose       pick a command interactively
+#   hafnium <command>    run a command
+set -uo pipefail
+
+JUSTFILE=/usr/share/hafnium/just/00-start.just
+recipes() { just --justfile "$JUSTFILE" --working-directory "$HOME" "$@"; }
+
+bold=$'\e[1m' dim=$'\e[2m' reset=$'\e[0m'
+[[ -t 1 && -z "${NO_COLOR:-}" ]] || bold="" dim="" reset=""
+
+build() { # "0.1.0, build 10 (7acb279)" from 0.1.0-10.git7acb279.fc45
+    local v r
+    v="$(rpm -q --qf '%{VERSION}' "$1" 2>/dev/null)" || { echo "not installed"; return; }
+    r="$(rpm -q --qf '%{RELEASE}' "$1")"
+    r="${r%.fc*}"
+    if [[ "$r" == *.git* ]]; then echo "$v, build ${r%%.git*} (${r#*.git})"; else echo "$v-$r"; fi
+}
+
+overview() {
+    local variant="AMD / Intel"
+    rpm -q hafnium-nvidia >/dev/null 2>&1 && variant="NVIDIA"
+    cat <<EOF
+${bold}Hafnium${reset} ${dim}·${reset} Fedora $(rpm -E %fedora) ${dim}·${reset} ${variant}
+  hafnium       $(build hafnium)
+  hafnium-dots  $(build hafnium-dots)
+
+${bold}Common commands${reset}
+  hafnium update            update everything: dnf, flatpaks, firmware
+  hafnium sync-greeter      copy your DMS look to the login screen
+  hafnium upgrade-fedora    move to the next Fedora release
+  hafnium dotfiles-status   show which dotfiles are applied
+
+Run ${bold}hafnium help${reset} for every command.
+EOF
+}
+
+help() {
+    cat <<EOF
+${bold}Usage${reset}: hafnium <command> [arguments]
+
+${bold}Commands${reset}
+EOF
+    recipes --list --unsorted --list-heading '' --list-prefix '  '
+    cat <<EOF
+  choose                    # pick a command interactively
+  help                      # show this help
+
+Docs: https://github.com/euandeas/hafnium
+EOF
+}
+
+case "${1:-}" in
+    "") overview ;;
+    help | -h | --help) help ;;
+    choose) recipes --choose ;;
+    *) exec just --justfile "$JUSTFILE" --working-directory "$HOME" "$@" ;;
+esac

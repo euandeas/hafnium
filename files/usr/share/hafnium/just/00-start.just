@@ -1,7 +1,8 @@
-# hafnium: Hafnium helper recipes. Run `hafnium` to pick one, or `hafnium --list`.
+# Hafnium helper recipes, run through /usr/bin/hafnium (`hafnium help` lists them).
 
+[private]
 default:
-    @hafnium --choose
+    @hafnium
 
 # Update the whole system: dnf (which includes Hafnium and hdots), flatpaks, firmware
 update:

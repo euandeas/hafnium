@@ -38,7 +38,8 @@ override it.
 ## Using it
 
 ```sh
-hafnium                 # pick a helper recipe (hafnium --list to list them)
+hafnium                 # overview: versions and common commands
+hafnium help            # every command
 hafnium update          # dnf + flatpak + firmware
 hafnium sync-greeter    # copy your DMS theme to the login screen
 hafnium upgrade-fedora  # move to the next Fedora release once all repos support it
