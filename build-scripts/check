@@ -182,6 +182,14 @@ check_dotfiles() {
     )
 }
 
+check_dotfiles_as_user() {
+    local user=hafnium-check
+    id "$user" >/dev/null 2>&1 || useradd --create-home "$user"
+    chmod -R a+rX "$hdots" "$hafnium"
+    runuser -u "$user" -- env CHECKS=dotfiles STRICT="$STRICT" FEDORA_VERSION="$FEDORA_VERSION" \
+        "$hafnium/build-scripts/check" "$hdots" "/home/$user/check"
+}
+
 # --- lint ----------------------------------------------------------------------
 check_lint() {
     local ok=0 f
@@ -210,7 +218,15 @@ for c in $CHECKS; do
         packages)  need packages make rpmbuild createrepo_c git && run packages check_packages ;;
         kickstart) need kickstart ksvalidator && run kickstart check_kickstart ;;
         resolve)   need resolve dnf && run resolve check_resolve ;;
-        dotfiles)  need dotfiles mise jq niri && run dotfiles check_dotfiles ;;
+        dotfiles)
+            if ((EUID == 0)); then
+                # A real login is never root, and dms refuses to run as root, so
+                # repeat just this check as a throwaway user (CI containers are root).
+                need dotfiles mise jq niri runuser useradd && run dotfiles check_dotfiles_as_user
+            else
+                need dotfiles mise jq niri && run dotfiles check_dotfiles
+            fi
+            ;;
         lint)      need lint python3 && run lint check_lint ;;
         *) echo "unknown check: $c" >&2; failed+=("$c") ;;
     esac
