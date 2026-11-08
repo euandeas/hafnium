@@ -127,6 +127,8 @@ cp -a nvidia/. %{buildroot}/
 
 %post
 %systemd_post hafnium-flathub.service
+# Every install and upgrade: point greetd at dms-greeter unless it already is.
+%{_libexecdir}/hafnium/setup-greetd || :
 if [ "$1" -eq 1 ]; then
     # First install: boot to the greeter and enable Hafnium's presets.
     systemctl preset greetd.service power-profiles-daemon.service bluetooth.service \
@@ -154,8 +156,8 @@ fi
 %doc README.md
 %{_bindir}/hafnium
 %{_unitdir}/hafnium-flathub.service
-%dir %{_unitdir}/greetd.service.d
-%{_unitdir}/greetd.service.d/50-hafnium.conf
+%dir %{_libexecdir}/hafnium
+%{_libexecdir}/hafnium/setup-greetd
 %{_presetdir}/80-hafnium.preset
 %{_userpresetdir}/80-hafnium.preset
 %{_prefix}/lib/environment.d/60-hafnium.conf

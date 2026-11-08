@@ -19,7 +19,7 @@ Everything lives under `/usr`, so it can be overridden from `/etc`.
 | DNS: Cloudflare over TLS, Quad9 fallback | [`resolved.conf.d/90-hafnium-dns.conf`](../files/usr/lib/systemd/resolved.conf.d/90-hafnium-dns.conf) | `/etc/systemd/resolved.conf.d/` |
 | dnf: 10 parallel downloads | [`libdnf.conf.d/80-hafnium.conf`](../files/usr/share/dnf5/libdnf.conf.d/80-hafnium.conf) | `/etc/dnf/libdnf5.conf.d/` |
 | Automatic updates | [`dnf5-automatic.service.d`](../files/usr/lib/systemd/system/dnf5-automatic.service.d/50-hafnium.conf) | `systemctl disable dnf5-automatic.timer` |
-| Login screen | [`greetd/config.toml`](../files/usr/share/hafnium/greetd/config.toml) | a drop-in in `/etc/systemd/system/greetd.service.d/` |
+| Login screen | [`greetd/config.toml`](../files/usr/share/hafnium/greetd/config.toml), copied to `/etc/greetd/config.toml` only if that isn't already set up for dms-greeter | edit `/etc/greetd/config.toml`, or `dms-greeter sync` (auto-login, fingerprint) |
 | Boot splash | [`plymouth/themes/hafnium`](../files/usr/share/plymouth/themes/hafnium/hafnium.plymouth) | `plymouth-set-default-theme -R spinner` |
 | Default terminal | [`niri-xdg-terminals.list`](../files/usr/share/xdg-terminal-exec/niri-xdg-terminals.list) | `~/.config/xdg-terminals.list` |
 | Icon theme (Papirus-Dark) | [`90_hafnium.gschema.override`](../files/usr/share/glib-2.0/schemas/90_hafnium.gschema.override) | `gsettings set org.gnome.desktop.interface icon-theme <name>`, or DMS settings |

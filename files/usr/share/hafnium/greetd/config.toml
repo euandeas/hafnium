@@ -1,7 +1,7 @@
-# Hafnium greetd config. greetd.service is pointed here by a drop-in
-# (/usr/lib/systemd/system/greetd.service.d/50-hafnium.conf).
-# To customise it, copy this file to /etc/greetd/config.toml and remove the drop-in's
-# --config argument, or add your own drop-in under /etc/systemd/system/greetd.service.d/.
+# Hafnium greetd config: the DMS login screen running under niri.
+# Installed to /etc/greetd/config.toml by the hafnium package when greetd isn't
+# already set up for dms-greeter. It's yours after that: `dms-greeter sync` can
+# change it (e.g. auto-login), and Hafnium won't overwrite it.
 
 [terminal]
 vt = 1
