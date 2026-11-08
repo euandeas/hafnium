@@ -12,10 +12,12 @@ hafnium
 -PackageKit-gstreamer-plugin
 -ffmpeg-free
 -mesa-va-drivers
-# niri recommends these; DMS already provides the launcher, lock screen and bar,
+# Recommended by niri, but DMS already provides the launcher, lock screen and bar,
 # and Ghostty is the terminal
 -alacritty
 -fuzzel
 -swaylock
 -waybar
+# Recommended by DMS for its audio visualiser
+-cava
 %end
