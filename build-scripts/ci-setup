@@ -11,6 +11,6 @@ cp "$here"/../repos/_copr*.repo /etc/yum.repos.d/
 dnf install -y --setopt=install_weak_deps=False \
     git-core make rpm-build systemd-rpm-macros createrepo_c rpmlint sudo \
     pykickstart ShellCheck just jq python3 \
-    niri mise dms-cli ghostty
+    niri mise dms-cli ghostty fastfetch
 
 git config --global --add safe.directory '*'

@@ -220,6 +220,12 @@ check_lint() {
     elif [[ "$STRICT" == 1 ]]; then
         echo "lint: ghostty not installed"; ok=1
     fi
+    if command -v fastfetch >/dev/null; then
+        fastfetch --config "$hdots/fastfetch/config.jsonc" --pipe >/dev/null 2>&1 \
+            || { echo "lint: fastfetch rejects hdots/fastfetch/config.jsonc"; ok=1; }
+    elif [[ "$STRICT" == 1 ]]; then
+        echo "lint: fastfetch not installed"; ok=1
+    fi
     if command -v just >/dev/null; then
         just --justfile "$hafnium/Justfile" --list >/dev/null || ok=1
         just --justfile "$hafnium/files/usr/share/hafnium/just/00-start.just" --list >/dev/null || ok=1
