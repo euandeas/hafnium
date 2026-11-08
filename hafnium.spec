@@ -55,6 +55,7 @@ Requires:       xdg-user-dirs
 Requires:       xdg-utils
 Requires:       flatpak
 Requires:       adw-gtk3-theme
+Requires:       papirus-icon-theme
 Requires:       default-fonts
 Requires:       adwaita-sans-fonts
 Requires:       google-noto-color-emoji-fonts
@@ -70,6 +71,7 @@ Requires:       systemd-resolved
 Requires:       mise
 Requires:       git-core
 Requires:       just
+Requires:       starship
 
 %description
 Hafnium is a minimal, non-atomic Fedora desktop built on niri and the Dux
@@ -162,6 +164,8 @@ fi
 %{_datadir}/hafnium/greetd/
 %{_datadir}/xdg-terminal-exec/niri-xdg-terminals.list
 %{_datadir}/applications/niri-mimeapps.list
+%{_datadir}/glib-2.0/schemas/90_hafnium.gschema.override
+%config(noreplace) %{_sysconfdir}/profile.d/hafnium-starship.sh
 %config(noreplace) %{_sysconfdir}/xdg/xdg-desktop-portal/niri-portals.conf
 %dir %{_datadir}/dms
 %{_datadir}/dms/cli-policy.json

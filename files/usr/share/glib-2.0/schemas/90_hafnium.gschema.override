@@ -1,0 +1,4 @@
+# Hafnium desktop defaults. GTK apps and DMS ("System Default" icon theme) follow these.
+# Per-user: gsettings set org.gnome.desktop.interface icon-theme <name>
+[org.gnome.desktop.interface]
+icon-theme='Papirus-Dark'
