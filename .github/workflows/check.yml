@@ -46,6 +46,15 @@ jobs:
           STRICT: "1"
         run: kansora/build-scripts/check kdots out/check
 
+      - name: Upload the built package repo
+        # repo.yml publishes this exact build instead of building again
+        uses: actions/upload-artifact@v7
+        with:
+          name: kansora-repo
+          path: out/check/build/repo
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Upload logs
         if: failure()
         uses: actions/upload-artifact@v7

@@ -7,7 +7,8 @@ name: Build package repo
 # kdots is a separate repo. Its own workflow triggers this one after a push to its
 # main branch if it has a KANSORA_DISPATCH_TOKEN secret; otherwise run this by
 # hand (`gh workflow run repo.yml -R euandeas/kansora`) or wait for the nightly run.
-# Nothing is published unless check.yml passes.
+# check.yml builds and tests the packages; this publishes that same build, so
+# nothing is published unless the checks pass.
 
 on:
   push:
@@ -34,31 +35,12 @@ jobs:
   build:
     needs: check
     runs-on: ubuntu-24.04
-    container:
-      image: registry.fedoraproject.org/fedora:45
     steps:
-      - name: Install tools
-        run: dnf install -y --setopt=install_weak_deps=False git-core make rpm-build systemd-rpm-macros createrepo_c rpmlint
-
-      - name: Checkout kansora
-        uses: actions/checkout@v7
+      - name: Get the packages the check job built
+        uses: actions/download-artifact@v7
         with:
-          fetch-depth: 0 # Release = commit count, so full history is needed
-
-      - name: Checkout kdots
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ github.repository_owner }}/kdots
-          path: .kdots
-          fetch-depth: 0
-
-      - name: Build RPMs and repo
-        run: |
-          git config --global --add safe.directory '*'
-          build-scripts/build-repo .kdots _site
-
-      - name: Lint
-        run: rpmlint _site/repo/*.rpm || true
+          name: kansora-repo
+          path: _site/repo
 
       - name: Add an index page
         run: |
@@ -68,7 +50,7 @@ jobs:
             for f in _site/repo/*.rpm; do n="$(basename "$f")"; echo "<li><a href=\"repo/$n\">$n</a></li>"; done
             echo '</ul>'
           } > _site/index.html
-          rm -rf _site/srpm _site/rpms
+          test -f _site/repo/repodata/repomd.xml
 
       - uses: actions/upload-pages-artifact@v3
         with:
