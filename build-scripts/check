@@ -220,6 +220,14 @@ check_lint() {
     elif [[ "$STRICT" == 1 ]]; then
         echo "lint: ghostty not installed"; ok=1
     fi
+    # Login-screen defaults: every tmpfiles link into /usr/share/kansora/dots must
+    # point at a file kdots actually ships
+    local target
+    while read -r target; do
+        [[ -f "$kdots/dots/${target#/usr/share/kansora/dots/}" ]] \
+            || { echo "lint: kansora-greeter.conf links to missing $target"; ok=1; }
+    done < <(awk '$1 == "L" && $7 ~ "^/usr/share/kansora/dots/" {print $7}' \
+                 "$kansora/files/usr/lib/tmpfiles.d/kansora-greeter.conf")
     if command -v fastfetch >/dev/null; then
         fastfetch --config "$kdots/fastfetch/config.jsonc" --pipe >/dev/null 2>&1 \
             || { echo "lint: fastfetch rejects kdots/fastfetch/config.jsonc"; ok=1; }
