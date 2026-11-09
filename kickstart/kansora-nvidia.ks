@@ -20,8 +20,6 @@ kernel-devel
 -fuzzel
 -swaylock
 -waybar
-# Recommended by DMS for its audio visualiser
--cava
 %end
 
 %post --erroronfail --log=/root/kansora-nvidia-post.log

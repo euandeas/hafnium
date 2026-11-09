@@ -35,6 +35,9 @@ Requires:       dux-search
 Requires:       dux-gop
 Requires:       matugen
 Requires:       accountsservice
+# Optional DMS features (see `dms doctor`): audio visualiser, more wallpaper image formats
+Requires:       cava
+Requires:       kf6-kimageformats
 Requires:       dux-greeter
 Requires:       greetd
 Requires:       greetd-selinux
@@ -43,6 +46,13 @@ Requires:       greetd-selinux
 Requires:       ghostty
 Requires:       xdg-terminal-exec
 Requires:       dux-files
+
+# --- Printing: CUPS (socket-activated), printer management from DMS, USB auto-setup,
+# .local printer hostnames. Vendor drivers (hplip, gutenprint-cups...) are per machine.
+Requires:       cups
+Requires:       cups-pk-helper
+Requires:       system-config-printer-udev
+Requires:       nss-mdns
 
 # --- Audio, Bluetooth, power ---------------------------------------------------
 Requires:       pipewire

@@ -70,7 +70,7 @@ check_kickstart() {
 # Everything the kickstart's %packages asks for, plus what Anaconda adds itself.
 ANACONDA_EXTRAS=(kernel grub2-efi-x64 shim-x64 grub2-pc efibootmgr btrfs-progs lvm2 cryptsetup langpacks-en)
 # Pulled in by weak deps but replaced by DMS / Ghostty
-UNWANTED=(alacritty fuzzel swaylock swayidle swaybg waybar mako foot kitty cava)
+UNWANTED=(alacritty fuzzel swaylock swayidle swaybg waybar mako foot kitty)
 
 write_repos() { # write_repos <dir>: the repos Anaconda gets from the kickstart
     local d="$1"
