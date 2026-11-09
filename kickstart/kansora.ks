@@ -18,4 +18,23 @@ kansora
 -fuzzel
 -swaylock
 -waybar
+# Server-oriented parts of @standard that a desktop doesn't need (Zirconium skips
+# them too): support reports (sos pulls ~140 MiB of AWS libraries), a second
+# "rescue" boot image built during install, enterprise login (sssd, realmd),
+# PackageKit, crash reporting, syslog, SELinux alert GUI, process accounting.
+-sos
+-dracut-config-rescue
+-sssd*
+-realmd
+-PackageKit
+-PackageKit-glib
+-abrt*
+-rsyslog
+-setroubleshoot*
+-mcelog
+-psacct
+-plocate
+-cyrus-sasl-plain
+-iptstate
+-pinfo
 %end
