@@ -35,9 +35,9 @@ systemctl enable greetd.service kansora-flathub.service
 systemctl --global enable kansora-dots.service dms.service dsearch.service
 
 # Quiet boot: hidden GRUB menu, Flexoki Plymouth splash.
-# Don't use `plymouth-set-default-theme -R`: in the installer chroot it runs dracut
-# for the installer's kernel (uname -r), not the installed one.
+# The kansora package already selects the theme while installing, before the
+# installer builds the initramfs, so no rebuild is needed here. (Never use
+# `plymouth-set-default-theme -R` in the chroot: it rebuilds for the installer's kernel.)
 grub2-editenv - set menu_auto_hide=1
 plymouth-set-default-theme kansora
-dracut --force --regenerate-all
 %end

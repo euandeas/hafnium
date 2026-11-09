@@ -37,4 +37,14 @@ kansora
 -cyrus-sasl-plain
 -iptstate
 -pinfo
+# Unused here: NetworkManager handles networking; network debugging tools; dnf5
+# doesn't use deltarpm
+-systemd-networkd
+-tcpdump
+-traceroute
+-mtr
+-at
+-bc
+-dos2unix
+-deltarpm
 %end

@@ -39,6 +39,18 @@ kernel-devel
 -cyrus-sasl-plain
 -iptstate
 -pinfo
+# Unused here: NetworkManager handles networking; network debugging tools; dnf5
+# doesn't use deltarpm
+-systemd-networkd
+-tcpdump
+-traceroute
+-mtr
+-at
+-bc
+-dos2unix
+-deltarpm
+# nouveau's firmware: nouveau is blacklisted here and the NVIDIA driver ships its own
+-nvidia-gpu-firmware
 %end
 
 %post --erroronfail --log=/root/kansora-nvidia-post.log
@@ -48,7 +60,7 @@ set -euxo pipefail
 # sit on a black screen while akmods compiles.
 KVER="$(rpm -q --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' kernel-core | sort -V | tail -n1)"
 akmods --force --kernels "${KVER}" || echo "akmods build failed; akmods.service will retry at boot"
-dracut --force --kver "${KVER}"   # runs after the common %post, so the Plymouth theme is kept
+dracut --force --kver "${KVER}"   # add the freshly built driver to the initramfs (theme already set)
 
 # Secure Boot: modules are signed with a key akmods generated on this machine.
 # It must be enrolled once with `kansora enroll-secure-boot-key`.
