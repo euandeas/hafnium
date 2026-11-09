@@ -1,12 +1,12 @@
-# Hafnium: AMD / Intel graphics
-%include hafnium-common.ks
+# Kansora: AMD / Intel graphics
+%include kansora-common.ks
 
 # Fedora Custom Operating System + Common NetworkManager Submodules + Standard
 %packages
 @^custom-environment
 @networkmanager-submodules
 @standard
-hafnium
+kansora
 # Codecs from RPM Fusion: swap Fedora's ffmpeg-free and mesa VA-API for the full builds
 @multimedia
 -PackageKit-gstreamer-plugin

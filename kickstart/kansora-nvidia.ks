@@ -1,13 +1,13 @@
-# Hafnium: NVIDIA graphics (proprietary driver from RPM Fusion, built with akmods)
-%include hafnium-common.ks
+# Kansora: NVIDIA graphics (proprietary driver from RPM Fusion, built with akmods)
+%include kansora-common.ks
 
 # Fedora Custom Operating System + Common NetworkManager Submodules + Standard
 %packages
 @^custom-environment
 @networkmanager-submodules
 @standard
-hafnium
-hafnium-nvidia
+kansora
+kansora-nvidia
 kernel-devel
 # Codecs from RPM Fusion: swap Fedora's ffmpeg-free and mesa VA-API for the full builds
 @multimedia
@@ -24,7 +24,7 @@ kernel-devel
 -cava
 %end
 
-%post --erroronfail --log=/root/hafnium-nvidia-post.log
+%post --erroronfail --log=/root/kansora-nvidia-post.log
 set -euxo pipefail
 
 # Build the NVIDIA module now so the first boot doesn't fall back to nouveau or
@@ -34,5 +34,5 @@ akmods --force --kernels "${KVER}" || echo "akmods build failed; akmods.service 
 dracut --force --kver "${KVER}"   # runs after the common %post, so the Plymouth theme is kept
 
 # Secure Boot: modules are signed with a key akmods generated on this machine.
-# It must be enrolled once with `hafnium enroll-secure-boot-key`.
+# It must be enrolled once with `kansora enroll-secure-boot-key`.
 %end

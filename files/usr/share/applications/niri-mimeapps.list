@@ -1,4 +1,4 @@
-# Hafnium defaults under niri. Override in ~/.config/mimeapps.list
+# Kansora defaults under niri. Override in ~/.config/mimeapps.list
 [Default Applications]
 inode/directory=dev.duxlabs.files.desktop
 x-scheme-handler/trash=dev.duxlabs.files.desktop

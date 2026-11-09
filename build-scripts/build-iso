@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Build a Hafnium installer ISO: the Fedora Everything netinstall ISO with a
-# Hafnium kickstart embedded by mkksiso (from lorax).
+# Build a Kansora installer ISO: the Fedora Everything netinstall ISO with a
+# Kansora kickstart embedded by mkksiso (from lorax).
 #
-#   build-scripts/build-iso <hafnium|hafnium-nvidia> [output-dir]
+#   build-scripts/build-iso <kansora|kansora-nvidia> [output-dir]
 #
 # Env: FEDORA_VERSION (default 45), ARCH (default x86_64), CACHE_DIR (default ./cache)
 # Needs: curl, sha256sum, mkksiso (dnf install lorax), xorriso; ksvalidator optional.
 set -euo pipefail
 
-variant="${1:?usage: build-iso <hafnium|hafnium-nvidia> [output-dir]}"
+variant="${1:?usage: build-iso <kansora|kansora-nvidia> [output-dir]}"
 outdir="${2:-out}"
 FEDORA_VERSION="${FEDORA_VERSION:-45}"
 ARCH="${ARCH:-x86_64}"
@@ -16,7 +16,7 @@ CACHE_DIR="${CACHE_DIR:-cache}"
 here="$(dirname "$(readlink -f "$0")")"
 
 case "$variant" in
-    hafnium | hafnium-nvidia) ;;
+    kansora | kansora-nvidia) ;;
     *) echo "unknown variant: $variant" >&2; exit 2 ;;
 esac
 
@@ -41,7 +41,7 @@ ks="${outdir}/${variant}.ks"
 "${here}/ks-render" "$variant" "$ks"
 
 # 3. Embed it. mkksiso adds inst.ks=hd:LABEL=<volid>:/<file> to every boot entry.
-volid="$(echo "${variant}-${FEDORA_VERSION}" | tr '[:lower:]' '[:upper:]')"   # e.g. HAFNIUM-NVIDIA-45
+volid="$(echo "${variant}-${FEDORA_VERSION}" | tr '[:lower:]' '[:upper:]')"   # e.g. KANSORA-NVIDIA-45
 iso="${outdir}/${variant}-${FEDORA_VERSION}-${ARCH}.iso"
 rm -f "$iso"
 mkksiso --ks "$ks" -V "$volid" "${CACHE_DIR}/${iso_name}" "$iso"

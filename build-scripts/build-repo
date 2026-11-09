@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# Build the hafnium and hafnium-dots RPMs and turn them into a dnf repo.
+# Build the kansora and kansora-dots RPMs and turn them into a dnf repo.
 #
-#   build-scripts/build-repo <hdots-checkout> <output-dir>
+#   build-scripts/build-repo <kdots-checkout> <output-dir>
 #
 # Output: <output-dir>/repo/{*.rpm,repodata/}, ready to serve at
-# https://euandeas.github.io/hafnium/repo/
+# https://euandeas.github.io/kansora/repo/
 # Needs: git, make, rpm-build, systemd-rpm-macros, createrepo_c. Both checkouts
 # need full git history: the Release number is the commit count.
 set -euo pipefail
 
-hdots="$(readlink -f "${1:?usage: build-repo <hdots-checkout> <output-dir>}")"
-out="$(readlink -m "${2:?usage: build-repo <hdots-checkout> <output-dir>}")"
-hafnium="$(dirname "$(readlink -f "$0")")/.."
+kdots="$(readlink -f "${1:?usage: build-repo <kdots-checkout> <output-dir>}")"
+out="$(readlink -m "${2:?usage: build-repo <kdots-checkout> <output-dir>}")"
+kansora="$(dirname "$(readlink -f "$0")")/.."
 
 rm -rf "${out}"
 mkdir -p "${out}/srpm" "${out}/repo"
 
-for src in "$hafnium" "$hdots"; do
+for src in "$kansora" "$kdots"; do
     if [[ "$(git -C "$src" rev-parse --is-shallow-repository)" == true ]]; then
         echo "build-repo: $src is a shallow clone; Release numbers would not increase" >&2
         exit 1

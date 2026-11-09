@@ -1,12 +1,12 @@
 name: Build package repo
 
-# Builds the hafnium and hafnium-dots RPMs and publishes them as a dnf repo on
-# GitHub Pages: https://euandeas.github.io/hafnium/repo/
-# Installers and installed systems pull Hafnium updates from there.
+# Builds the kansora and kansora-dots RPMs and publishes them as a dnf repo on
+# GitHub Pages: https://euandeas.github.io/kansora/repo/
+# Installers and installed systems pull Kansora updates from there.
 #
-# hdots is a separate repo. Its own workflow triggers this one after a push to its
-# main branch if it has a HAFNIUM_DISPATCH_TOKEN secret; otherwise run this by
-# hand (`gh workflow run repo.yml -R euandeas/hafnium`) or wait for the nightly run.
+# kdots is a separate repo. Its own workflow triggers this one after a push to its
+# main branch if it has a KANSORA_DISPATCH_TOKEN secret; otherwise run this by
+# hand (`gh workflow run repo.yml -R euandeas/kansora`) or wait for the nightly run.
 # Nothing is published unless check.yml passes.
 
 on:
@@ -40,22 +40,22 @@ jobs:
       - name: Install tools
         run: dnf install -y --setopt=install_weak_deps=False git-core make rpm-build systemd-rpm-macros createrepo_c rpmlint
 
-      - name: Checkout hafnium
+      - name: Checkout kansora
         uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Release = commit count, so full history is needed
 
-      - name: Checkout hdots
+      - name: Checkout kdots
         uses: actions/checkout@v7
         with:
-          repository: ${{ github.repository_owner }}/hdots
-          path: .hdots
+          repository: ${{ github.repository_owner }}/kdots
+          path: .kdots
           fetch-depth: 0
 
       - name: Build RPMs and repo
         run: |
           git config --global --add safe.directory '*'
-          build-scripts/build-repo .hdots _site
+          build-scripts/build-repo .kdots _site
 
       - name: Lint
         run: rpmlint _site/repo/*.rpm || true
@@ -63,8 +63,8 @@ jobs:
       - name: Add an index page
         run: |
           {
-            echo '<!doctype html><meta charset="utf-8"><title>Hafnium repo</title>'
-            echo '<h1>Hafnium dnf repo</h1><p>Used by the Hafnium installer and <code>hafnium-repos</code>.</p><ul>'
+            echo '<!doctype html><meta charset="utf-8"><title>Kansora repo</title>'
+            echo '<h1>Kansora dnf repo</h1><p>Used by the Kansora installer and <code>kansora-repos</code>.</p><ul>'
             for f in _site/repo/*.rpm; do n="$(basename "$f")"; echo "<li><a href=\"repo/$n\">$n</a></li>"; done
             echo '</ul>'
           } > _site/index.html

@@ -1,7 +1,7 @@
-# Hafnium greetd config: the DMS login screen running under niri.
-# Installed to /etc/greetd/config.toml by the hafnium package when greetd isn't
+# Kansora greetd config: the DMS login screen running under niri.
+# Installed to /etc/greetd/config.toml by the kansora package when greetd isn't
 # already set up for dms-greeter. It's yours after that: `dms-greeter sync` can
-# change it (e.g. auto-login), and Hafnium won't overwrite it.
+# change it (e.g. auto-login), and Kansora won't overwrite it.
 
 [terminal]
 vt = 1

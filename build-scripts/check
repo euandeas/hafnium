@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Validate Hafnium and hdots before anything is published.
+# Validate Kansora and kdots before anything is published.
 #
-#   build-scripts/check <hdots-checkout> [work-dir]
+#   build-scripts/check <kdots-checkout> [work-dir]
 #
 #   packages   build all RPMs + the dnf repo (build-repo), rpmlint (advisory)
 #   kickstart  render and ksvalidator both kickstarts
 #   resolve    dry-run each kickstart's %packages against the real repos plus the
 #              freshly built RPMs, the same transaction Anaconda will do
-#   dotfiles   run hafnium-dots in a throwaway $HOME (mise layer, seeds, DMS
+#   dotfiles   run kansora-dots in a throwaway $HOME (mise layer, seeds, DMS
 #              defaults), then `niri validate` the result
 #   lint       shellcheck, JSON syntax, Justfile syntax
 #
@@ -15,9 +15,9 @@
 # a missing tool a failure. Env: FEDORA_VERSION (default 45), CHECKS (space list).
 set -uo pipefail
 
-hdots="$(readlink -f "${1:?usage: check <hdots-checkout> [work-dir]}")"
+kdots="$(readlink -f "${1:?usage: check <kdots-checkout> [work-dir]}")"
 work="$(readlink -m "${2:-out/check}")"
-hafnium="$(readlink -f "$(dirname "$(readlink -f "$0")")/..")"
+kansora="$(readlink -f "$(dirname "$(readlink -f "$0")")/..")"
 FEDORA_VERSION="${FEDORA_VERSION:-45}"
 CHECKS="${CHECKS:-packages kickstart resolve dotfiles lint}"
 STRICT="${STRICT:-0}"
@@ -51,7 +51,7 @@ mkdir -p "$work"
 
 # --- packages ------------------------------------------------------------------
 check_packages() {
-    "$hafnium/build-scripts/build-repo" "$hdots" "$work/build" || return 1
+    "$kansora/build-scripts/build-repo" "$kdots" "$work/build" || return 1
     if command -v rpmlint >/dev/null; then
         rpmlint "$work"/build/repo/*.rpm || echo "rpmlint: findings above are advisory"
     fi
@@ -60,8 +60,8 @@ check_packages() {
 # --- kickstart -----------------------------------------------------------------
 check_kickstart() {
     local v ok=0
-    for v in hafnium hafnium-nvidia; do
-        FEDORA_VERSION="$FEDORA_VERSION" "$hafnium/build-scripts/ks-render" "$v" "$work/ks/$v.ks" || ok=1
+    for v in kansora kansora-nvidia; do
+        FEDORA_VERSION="$FEDORA_VERSION" "$kansora/build-scripts/ks-render" "$v" "$work/ks/$v.ks" || ok=1
     done
     return $ok
 }
@@ -105,16 +105,16 @@ name=Terra
 baseurl=https://repos.fyralabs.com/terra\$releasever
 gpgcheck=0
 EOF
-    # Dux COPRs, exactly as hafnium-repos ships them
-    cp "$hafnium"/repos/_copr*.repo "$d/"
+    # Dux COPRs, exactly as kansora-repos ships them
+    cp "$kansora"/repos/_copr*.repo "$d/"
 }
 
 check_resolve() {
-    compgen -G "$work/build/repo/hafnium-[0-9]*.rpm" >/dev/null || { echo "resolve: needs the packages check"; return 1; }
-    [[ -f "$work/ks/hafnium.ks" ]] || { echo "resolve: needs the kickstart check"; return 1; }
+    compgen -G "$work/build/repo/kansora-[0-9]*.rpm" >/dev/null || { echo "resolve: needs the packages check"; return 1; }
+    [[ -f "$work/ks/kansora.ks" ]] || { echo "resolve: needs the kickstart check"; return 1; }
     local v ok=0 root="$work/resolve-root" reposdir="$work/resolve-repos" log
     write_repos "$reposdir"
-    for v in hafnium hafnium-nvidia; do
+    for v in kansora kansora-nvidia; do
         local install=() exclude=()
         while read -r line; do
             case "$line" in
@@ -123,11 +123,11 @@ check_resolve() {
                 *) install+=("$line") ;;
             esac
         done < <(sed -n '/^%packages/,/^%end/{/^%/d;p}' "$work/ks/$v.ks")
-        # The freshly built RPMs stand in for the GitHub Pages repo. hafnium-nvidia
+        # The freshly built RPMs stand in for the GitHub Pages repo. kansora-nvidia
         # only goes into the NVIDIA transaction.
         local rpm built=()
-        for rpm in "$work"/build/repo/hafnium*.rpm; do
-            [[ "$rpm" == */hafnium-nvidia-[0-9]* && "$v" != hafnium-nvidia ]] && continue
+        for rpm in "$work"/build/repo/kansora*.rpm; do
+            [[ "$rpm" == */kansora-nvidia-[0-9]* && "$v" != kansora-nvidia ]] && continue
             built+=("$rpm")
         done
         rm -rf "$root" && mkdir -p "$root"
@@ -143,7 +143,7 @@ check_resolve() {
             local pkg
             for pkg in "${UNWANTED[@]}"; do
                 if grep -qE "^ $pkg " "$log"; then
-                    echo "resolve: $v would install $pkg, which Hafnium doesn't want (add -$pkg to %packages)"
+                    echo "resolve: $v would install $pkg, which Kansora doesn't want (add -$pkg to %packages)"
                     ok=1
                 fi
             done
@@ -160,12 +160,12 @@ check_resolve() {
 check_dotfiles() {
     local t="$work/dotfiles"
     mkdir -p "$t/home" "$t/sys/conf.d"
-    cp -a "$hdots/dots" "$t/dots"
+    cp -a "$kdots/dots" "$t/dots"
     # Point the shipped paths at the copy
-    sed "s|/usr/share/hafnium/dots|$t/dots|g" "$hdots/mise/hafnium.toml" > "$t/sys/conf.d/hafnium.toml"
-    sed -i "s|/usr/share/hafnium/dots/niri|$t/dots/niri|g" "$t/dots/niri/config.kdl"
-    sed "s|^HAFNIUM_CONF=.*|HAFNIUM_CONF=$t/sys/conf.d/hafnium.toml|" "$hdots/bin/hafnium-dots" > "$t/hafnium-dots"
-    chmod +x "$t/hafnium-dots"
+    sed "s|/usr/share/kansora/dots|$t/dots|g" "$kdots/mise/kansora.toml" > "$t/sys/conf.d/kansora.toml"
+    sed -i "s|/usr/share/kansora/dots/niri|$t/dots/niri|g" "$t/dots/niri/config.kdl"
+    sed "s|^KANSORA_CONF=.*|KANSORA_CONF=$t/sys/conf.d/kansora.toml|" "$kdots/bin/kansora-dots" > "$t/kansora-dots"
+    chmod +x "$t/kansora-dots"
 
     (
         set -e
@@ -173,7 +173,7 @@ check_dotfiles() {
             MISE_SYSTEM_DIR="$t/sys" MISE_STATE_DIR="$t/state" MISE_DATA_DIR="$t/data" MISE_CACHE_DIR="$t/cache"
         cd "$HOME"
         echo "dotfiles: first login"
-        "$t/hafnium-dots" apply
+        "$t/kansora-dots" apply
         for f in .config/niri/config.kdl .config/niri/local.kdl .config/ghostty/config \
                  .config/dms/settings.json .config/dms/clsettings.json .local/state/dms/session.json; do
             [[ -e "$f" ]] || { echo "dotfiles: $f was not deployed"; exit 1; }
@@ -184,7 +184,7 @@ check_dotfiles() {
             echo "dotfiles: dms not installed, DMS defaults not generated"
         fi
         echo "dotfiles: second login (must change nothing)"
-        "$t/hafnium-dots" apply | grep -q 'everything is in place' || { echo "dotfiles: second apply was not a no-op"; exit 1; }
+        "$t/kansora-dots" apply | grep -q 'everything is in place' || { echo "dotfiles: second apply was not a no-op"; exit 1; }
         echo "dotfiles: niri validate"
         niri validate -c .config/niri/config.kdl 2>&1 | grep -vE 'optional include not found' | tail -3
         niri validate -c .config/niri/config.kdl >/dev/null 2>&1
@@ -192,11 +192,11 @@ check_dotfiles() {
 }
 
 check_dotfiles_as_user() {
-    local user=hafnium-check
+    local user=kansora-check
     id "$user" >/dev/null 2>&1 || useradd --create-home "$user"
-    chmod -R a+rX "$hdots" "$hafnium"
+    chmod -R a+rX "$kdots" "$kansora"
     runuser -u "$user" -- env CHECKS=dotfiles STRICT="$STRICT" FEDORA_VERSION="$FEDORA_VERSION" \
-        "$hafnium/build-scripts/check" "$hdots" "/home/$user/check"
+        "$kansora/build-scripts/check" "$kdots" "/home/$user/check"
 }
 
 # --- lint ----------------------------------------------------------------------
@@ -204,31 +204,31 @@ check_lint() {
     local ok=0 f
     if command -v shellcheck >/dev/null; then
         shellcheck -S warning \
-            "$hafnium"/build-scripts/{build-iso,build-repo,check,ci-setup,ks-render} \
-            "$hafnium/files/usr/bin/hafnium" "$hafnium/files/etc/profile.d/hafnium-starship.sh" \
-            "$hafnium/files/usr/libexec/hafnium/setup-greetd" \
-            "$hdots/bin/hafnium-dots" || ok=1
+            "$kansora"/build-scripts/{build-iso,build-repo,check,ci-setup,ks-render} \
+            "$kansora/files/usr/bin/kansora" "$kansora/files/etc/profile.d/kansora-starship.sh" \
+            "$kansora/files/usr/libexec/kansora/setup-greetd" \
+            "$kdots/bin/kansora-dots" || ok=1
     else
         echo "lint: shellcheck not installed, skipped"
     fi
-    for f in "$hafnium/files/usr/share/hafnium/themes/flexoki.json" "$hafnium/files/usr/share/dms/cli-policy.json" \
-             "$hdots"/dots/dms/*.json; do
+    for f in "$kansora/files/usr/share/kansora/themes/flexoki.json" "$kansora/files/usr/share/dms/cli-policy.json" \
+             "$kdots"/dots/dms/*.json; do
         python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$f" || { echo "lint: bad JSON: $f"; ok=1; }
     done
     if command -v ghostty >/dev/null; then
-        ghostty +validate-config --config-file="$hdots/dots/ghostty/config" || { echo "lint: bad Ghostty config"; ok=1; }
+        ghostty +validate-config --config-file="$kdots/dots/ghostty/config" || { echo "lint: bad Ghostty config"; ok=1; }
     elif [[ "$STRICT" == 1 ]]; then
         echo "lint: ghostty not installed"; ok=1
     fi
     if command -v fastfetch >/dev/null; then
-        fastfetch --config "$hdots/fastfetch/config.jsonc" --pipe >/dev/null 2>&1 \
-            || { echo "lint: fastfetch rejects hdots/fastfetch/config.jsonc"; ok=1; }
+        fastfetch --config "$kdots/fastfetch/config.jsonc" --pipe >/dev/null 2>&1 \
+            || { echo "lint: fastfetch rejects kdots/fastfetch/config.jsonc"; ok=1; }
     elif [[ "$STRICT" == 1 ]]; then
         echo "lint: fastfetch not installed"; ok=1
     fi
     if command -v just >/dev/null; then
-        just --justfile "$hafnium/Justfile" --list >/dev/null || ok=1
-        just --justfile "$hafnium/files/usr/share/hafnium/just/00-start.just" --list >/dev/null || ok=1
+        just --justfile "$kansora/Justfile" --list >/dev/null || ok=1
+        just --justfile "$kansora/files/usr/share/kansora/just/00-start.just" --list >/dev/null || ok=1
     else
         echo "lint: just not installed, Justfiles not checked"
     fi

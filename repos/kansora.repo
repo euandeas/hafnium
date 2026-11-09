@@ -1,0 +1,12 @@
+# Kansora's own packages (kansora, kansora-dots), built by GitHub Actions and
+# served from GitHub Pages: https://github.com/euandeas/kansora
+[kansora]
+name=Kansora
+baseurl=https://euandeas.github.io/kansora/repo/
+type=rpm-md
+skip_if_unavailable=True
+# Unsigned packages, fetched over HTTPS from your own GitHub Pages site.
+gpgcheck=0
+repo_gpgcheck=0
+enabled=1
+metadata_expire=6h

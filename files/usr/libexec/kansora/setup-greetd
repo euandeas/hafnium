@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 # Point greetd at dms-greeter, unless it already is.
-# Run from the hafnium package's %post on every install and upgrade. It only
+# Run from the kansora package's %post on every install and upgrade. It only
 # writes /etc/greetd/config.toml when that file doesn't mention dms-greeter
 # (e.g. Fedora's stock agreety config), so anything set later with
 # `dms-greeter sync` (auto-login, fingerprint) is kept.
@@ -8,14 +8,14 @@
 set -euo pipefail
 root="${ROOT:-}"
 conf="$root/etc/greetd/config.toml"
-template="$root/usr/share/hafnium/greetd/config.toml"
+template="$root/usr/share/kansora/greetd/config.toml"
 
 if [[ -f "$conf" ]] && grep -q 'dms-greeter' "$conf"; then
     exit 0
 fi
 install -d -m 0755 "$root/etc/greetd"
 if [[ -f "$conf" ]]; then
-    cp -p "$conf" "$conf.hafnium-orig"
+    cp -p "$conf" "$conf.kansora-orig"
 fi
 install -m 0644 "$template" "$conf"
-echo "hafnium: configured greetd for dms-greeter (${conf#"$root"})"
+echo "kansora: configured greetd for dms-greeter (${conf#"$root"})"

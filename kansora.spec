@@ -1,18 +1,22 @@
-Name:           hafnium
-Version:        0.1.0
+Name:           kansora
+Version:        0.2.0
 # The Makefile rewrites Release to <commit-count>.git<sha> so every push upgrades.
 Release:        1%{?dist}
-Summary:        Hafnium: a minimal Fedora desktop with niri and Dux (DMS)
+Summary:        Kansora: a minimal Fedora desktop with niri and Dux (DMS)
 License:        Apache-2.0
-URL:            https://github.com/euandeas/hafnium
+URL:            https://github.com/euandeas/kansora
 Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch
 
 BuildRequires:  systemd-rpm-macros
 
-Requires:       hafnium-repos = %{version}-%{release}
-Requires:       hafnium-dots
-Requires:       hafnium-codecs = %{version}-%{release}
+# Renamed from Hafnium in 0.2.0: replace the old packages on upgrade
+Obsoletes:      hafnium < 0.2
+Provides:       hafnium = %{version}-%{release}
+
+Requires:       kansora-repos = %{version}-%{release}
+Requires:       kansora-dots
+Requires:       kansora-codecs = %{version}-%{release}
 
 # --- Compositor and session ----------------------------------------------------
 Requires:       niri
@@ -75,24 +79,30 @@ Requires:       just
 Requires:       starship
 
 %description
-Hafnium is a minimal, non-atomic Fedora desktop built on niri and the Dux
+Kansora is a minimal, non-atomic Fedora desktop built on niri and the Dux
 Modular Shell (DMS), with Ghostty as the default terminal. This metapackage
-pulls in the desktop and ships Hafnium's system configuration: greetd with
+pulls in the desktop and ships Kansora's system configuration: greetd with
 dms-greeter, encrypted DNS, dnf tuning and automatic updates, the Flexoki light and dark themes
-and wallpapers, a quiet Flexoki boot splash, presets, the default terminal, and the hafnium helper command.
+and wallpapers, a quiet Flexoki boot splash, presets, the default terminal, and the kansora helper command.
 
 %package repos
-Summary:        Package repositories used by Hafnium
+Summary:        Package repositories used by Kansora
+# Renamed from Hafnium in 0.2.0: replace the old packages on upgrade
+Obsoletes:      hafnium-repos < 0.2
+Provides:       hafnium-repos = %{version}-%{release}
 Requires:       rpmfusion-free-release
 Requires:       rpmfusion-nonfree-release
 Requires:       terra-release
 %description repos
-dnf repository definitions for Hafnium's own repo (GitHub Pages) and the Dux (duxlabs) COPRs,
+dnf repository definitions for Kansora's own repo (GitHub Pages) and the Dux (duxlabs) COPRs,
 plus the RPM Fusion and Terra release packages.
 
 %package codecs
-Summary:        Full multimedia codecs for Hafnium (RPM Fusion)
-Requires:       hafnium-repos = %{version}-%{release}
+Summary:        Full multimedia codecs for Kansora (RPM Fusion)
+# Renamed from Hafnium in 0.2.0: replace the old packages on upgrade
+Obsoletes:      hafnium-codecs < 0.2
+Provides:       hafnium-codecs = %{version}-%{release}
+Requires:       kansora-repos = %{version}-%{release}
 Requires:       ffmpeg
 Requires:       gstreamer1-plugin-libav
 Requires:       gstreamer1-plugin-openh264
@@ -104,15 +114,18 @@ Full ffmpeg, GStreamer codecs and hardware video decoding (VA-API) for AMD and
 Intel from RPM Fusion. Replaces Fedora's ffmpeg-free.
 
 %package nvidia
-Summary:        NVIDIA driver setup for Hafnium (RPM Fusion akmod)
-Requires:       hafnium = %{version}-%{release}
+Summary:        NVIDIA driver setup for Kansora (RPM Fusion akmod)
+# Renamed from Hafnium in 0.2.0: replace the old packages on upgrade
+Obsoletes:      hafnium-nvidia < 0.2
+Provides:       hafnium-nvidia = %{version}-%{release}
+Requires:       kansora = %{version}-%{release}
 Requires:       akmod-nvidia
 Requires:       xorg-x11-drv-nvidia-cuda
 Requires:       xorg-x11-drv-nvidia-power
 Requires:       libva-nvidia-driver
 Requires:       mokutil
 %description nvidia
-Proprietary NVIDIA driver from RPM Fusion (akmod), plus Hafnium's modprobe and
+Proprietary NVIDIA driver from RPM Fusion (akmod), plus Kansora's modprobe and
 dracut defaults for niri on NVIDIA. Needs the RPM Fusion free and nonfree repos.
 
 %prep
@@ -126,30 +139,30 @@ install -d %{buildroot}%{_sysconfdir}/yum.repos.d
 install -pm0644 repos/*.repo %{buildroot}%{_sysconfdir}/yum.repos.d/
 cp -a nvidia/. %{buildroot}/
 install -d %{buildroot}%{_sysconfdir}/fonts/conf.d
-ln -s ../../..%{_datadir}/fontconfig/conf.avail/50-hafnium-monospace.conf \
-    %{buildroot}%{_sysconfdir}/fonts/conf.d/50-hafnium-monospace.conf
+ln -s ../../..%{_datadir}/fontconfig/conf.avail/50-kansora-monospace.conf \
+    %{buildroot}%{_sysconfdir}/fonts/conf.d/50-kansora-monospace.conf
 
 %post
-%systemd_post hafnium-flathub.service
+%systemd_post kansora-flathub.service
 # Every install and upgrade: point greetd at dms-greeter unless it already is.
-%{_libexecdir}/hafnium/setup-greetd || :
+%{_libexecdir}/kansora/setup-greetd || :
 if [ "$1" -eq 1 ]; then
-    # First install: boot to the greeter and enable Hafnium's presets.
+    # First install: boot to the greeter and enable Kansora's presets.
     systemctl preset greetd.service power-profiles-daemon.service bluetooth.service \
         dnf5-automatic.timer systemd-resolved.service NetworkManager-wait-online.service \
         flatpak-add-fedora-repos.service >/dev/null 2>&1 || :
     systemctl --global preset dms.service dsearch.service >/dev/null 2>&1 || :
     systemctl set-default graphical.target >/dev/null 2>&1 || :
     # Quiet boot: Flexoki splash (the initramfs is rebuilt by the kickstart / next kernel)
-    plymouth-set-default-theme hafnium >/dev/null 2>&1 || :
+    plymouth-set-default-theme kansora >/dev/null 2>&1 || :
     grub2-editenv - set menu_auto_hide=1 >/dev/null 2>&1 || :
 fi
 
 %preun
-%systemd_preun hafnium-flathub.service
+%systemd_preun kansora-flathub.service
 
 %postun
-%systemd_postun hafnium-flathub.service
+%systemd_postun kansora-flathub.service
 
 %post nvidia
 if [ "$1" -eq 1 ]; then
@@ -158,33 +171,33 @@ fi
 
 %files
 %doc README.md
-%{_bindir}/hafnium
-%{_unitdir}/hafnium-flathub.service
-%dir %{_libexecdir}/hafnium
-%{_libexecdir}/hafnium/setup-greetd
-%{_presetdir}/80-hafnium.preset
-%{_userpresetdir}/80-hafnium.preset
-%{_prefix}/lib/environment.d/60-hafnium.conf
-%dir %{_datadir}/hafnium
-%{_datadir}/hafnium/just/
-%{_datadir}/hafnium/greetd/
+%{_bindir}/kansora
+%{_unitdir}/kansora-flathub.service
+%dir %{_libexecdir}/kansora
+%{_libexecdir}/kansora/setup-greetd
+%{_presetdir}/80-kansora.preset
+%{_userpresetdir}/80-kansora.preset
+%{_prefix}/lib/environment.d/60-kansora.conf
+%dir %{_datadir}/kansora
+%{_datadir}/kansora/just/
+%{_datadir}/kansora/greetd/
 %{_datadir}/xdg-terminal-exec/niri-xdg-terminals.list
 %{_datadir}/applications/niri-mimeapps.list
-%{_datadir}/glib-2.0/schemas/90_hafnium.gschema.override
-%{_datadir}/fontconfig/conf.avail/50-hafnium-monospace.conf
-%{_sysconfdir}/fonts/conf.d/50-hafnium-monospace.conf
-%config(noreplace) %{_sysconfdir}/profile.d/hafnium-starship.sh
+%{_datadir}/glib-2.0/schemas/90_kansora.gschema.override
+%{_datadir}/fontconfig/conf.avail/50-kansora-monospace.conf
+%{_sysconfdir}/fonts/conf.d/50-kansora-monospace.conf
+%config(noreplace) %{_sysconfdir}/profile.d/kansora-starship.sh
 %config(noreplace) %{_sysconfdir}/xdg/xdg-desktop-portal/niri-portals.conf
 %dir %{_datadir}/dms
 %{_datadir}/dms/cli-policy.json
-%{_prefix}/lib/systemd/resolved.conf.d/90-hafnium-dns.conf
+%{_prefix}/lib/systemd/resolved.conf.d/90-kansora-dns.conf
 %dir %{_unitdir}/dnf5-automatic.service.d
-%{_unitdir}/dnf5-automatic.service.d/50-hafnium.conf
-%{_datadir}/dnf5/libdnf.conf.d/80-hafnium.conf
-%{_datadir}/plymouth/themes/hafnium/
-%{_datadir}/hafnium/themes/
-%{_datadir}/backgrounds/hafnium/
-%{_tmpfilesdir}/hafnium-greeter.conf
+%{_unitdir}/dnf5-automatic.service.d/50-kansora.conf
+%{_datadir}/dnf5/libdnf.conf.d/80-kansora.conf
+%{_datadir}/plymouth/themes/kansora/
+%{_datadir}/kansora/themes/
+%{_datadir}/backgrounds/kansora/
+%{_tmpfilesdir}/kansora-greeter.conf
 
 %files repos
 %config(noreplace) %{_sysconfdir}/yum.repos.d/*.repo
@@ -193,8 +206,8 @@ fi
 # metapackage
 
 %files nvidia
-%{_modprobedir}/hafnium-nvidia.conf
-%{_prefix}/lib/dracut/dracut.conf.d/90-hafnium-nvidia.conf
+%{_modprobedir}/kansora-nvidia.conf
+%{_prefix}/lib/dracut/dracut.conf.d/90-kansora-nvidia.conf
 
 %changelog
 * Sun Nov 08 2026 euandeas - 0.1.0-1

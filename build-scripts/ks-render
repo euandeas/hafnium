@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Render a Hafnium kickstart into one self-contained file by splicing in its
-# `%include hafnium-common.ks` line. Don't use ksflatten here: it writes
+# Render a Kansora kickstart into one self-contained file by splicing in its
+# `%include kansora-common.ks` line. Don't use ksflatten here: it writes
 # `bootloader --location=none`, which installs a system with no bootloader.
 #
-#   build-scripts/ks-render <variant> <output>    e.g. ks-render hafnium-nvidia out/hafnium-nvidia.ks
+#   build-scripts/ks-render <variant> <output>    e.g. ks-render kansora-nvidia out/kansora-nvidia.ks
 set -euo pipefail
 variant="$1" out="$2"
 ksdir="$(dirname "$(readlink -f "$0")")/../kickstart"
 mkdir -p "$(dirname "$out")"
-sed -e "/^%include hafnium-common.ks\$/{r ${ksdir}/hafnium-common.ks" -e 'd}' \
+sed -e "/^%include kansora-common.ks\$/{r ${ksdir}/kansora-common.ks" -e 'd}' \
     "${ksdir}/${variant}.ks" > "$out"
 if grep -q '^%include' "$out"; then
     echo "ks-render: unresolved %include in $out" >&2

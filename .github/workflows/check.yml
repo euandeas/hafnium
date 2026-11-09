@@ -21,30 +21,30 @@ jobs:
       - name: Install git
         run: dnf install -y git-core
 
-      - name: Checkout hafnium
+      - name: Checkout kansora
         uses: actions/checkout@v7
         with:
-          repository: ${{ github.repository_owner }}/hafnium
-          # Use the commit being checked when this is the hafnium repo, otherwise main.
-          ref: ${{ github.event.repository.name == 'hafnium' && github.sha || 'main' }}
-          path: hafnium
+          repository: ${{ github.repository_owner }}/kansora
+          # Use the commit being checked when this is the kansora repo, otherwise main.
+          ref: ${{ github.event.repository.name == 'kansora' && github.sha || 'main' }}
+          path: kansora
           fetch-depth: 0
 
-      - name: Checkout hdots
+      - name: Checkout kdots
         uses: actions/checkout@v7
         with:
-          repository: ${{ github.repository_owner }}/hdots
-          ref: ${{ github.event.repository.name == 'hdots' && github.sha || 'main' }}
-          path: hdots
+          repository: ${{ github.repository_owner }}/kdots
+          ref: ${{ github.event.repository.name == 'kdots' && github.sha || 'main' }}
+          path: kdots
           fetch-depth: 0
 
       - name: Install tools
-        run: hafnium/build-scripts/ci-setup
+        run: kansora/build-scripts/ci-setup
 
       - name: Check
         env:
           STRICT: "1"
-        run: hafnium/build-scripts/check hdots out/check
+        run: kansora/build-scripts/check kdots out/check
 
       - name: Upload logs
         if: failure()

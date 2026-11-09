@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [hafnium, hafnium-nvidia]
+        variant: [kansora, kansora-nvidia]
     env:
       FEDORA_VERSION: "45"
     steps:
@@ -64,9 +64,9 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           export GH_REPO="$GITHUB_REPOSITORY"
           gh release view latest >/dev/null 2>&1 || \
-            gh release create latest --title "Hafnium (latest)" --latest \
-              --notes "Rolling build of the Hafnium installer ISOs from main. Each ISO is a Fedora netinstall with the Hafnium kickstart embedded, so it needs internet access while installing."
+            gh release create latest --title "Kansora (latest)" --latest \
+              --notes "Rolling build of the Kansora installer ISOs from main. Each ISO is a Fedora netinstall with the Kansora kickstart embedded, so it needs internet access while installing."
           gh release upload latest out/*.iso out/*.sha256 out/*.ks --clobber
           # Point the tag at the commit these ISOs were built from
           gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/latest" -f sha="${GITHUB_SHA}" -F force=true >/dev/null
-          gh release edit latest --notes "Rolling build of the Hafnium installer ISOs, built from ${GITHUB_SHA::7} on $(date -u +%Y-%m-%d). Each ISO is a Fedora netinstall with the Hafnium kickstart embedded, so it needs internet access while installing."
+          gh release edit latest --notes "Rolling build of the Kansora installer ISOs, built from ${GITHUB_SHA::7} on $(date -u +%Y-%m-%d). Each ISO is a Fedora netinstall with the Kansora kickstart embedded, so it needs internet access while installing."
