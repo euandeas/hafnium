@@ -38,7 +38,7 @@ override it.
 ## Using it
 
 ```sh
-kansora                 # overview: versions and common commands
+kansora                 # overview: versions, update and reboot status, common commands
 kansora help            # every command
 kansora update          # dnf + flatpak + firmware
 kansora sync-greeter    # copy your DMS theme to the login screen

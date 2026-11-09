@@ -9,8 +9,8 @@ set -uo pipefail
 JUSTFILE=/usr/share/kansora/just/00-start.just
 recipes() { just --justfile "$JUSTFILE" --working-directory "$HOME" "$@"; }
 
-bold=$'\e[1m' dim=$'\e[2m' reset=$'\e[0m'
-[[ -t 1 && -z "${NO_COLOR:-}" ]] || bold="" dim="" reset=""
+bold=$'\e[1m' dim=$'\e[2m' red=$'\e[31m' yellow=$'\e[33m' reset=$'\e[0m'
+[[ -t 1 && -z "${NO_COLOR:-}" ]] || bold="" dim="" red="" yellow="" reset=""
 
 build() { # "0.1.0, build 10 (7acb279)" from 0.1.0-10.git7acb279.fc45
     local v r
@@ -20,6 +20,56 @@ build() { # "0.1.0, build 10 (7acb279)" from 0.1.0-10.git7acb279.fc45
     if [[ "$r" == *.git* ]]; then echo "$v, build ${r%%.git*} (${r#*.git})"; else echo "$v-$r"; fi
 }
 
+when() { # "today 04:12", "yesterday 20:50", "Tue 10 Nov 06:06" from a systemd timestamp
+    local ts="$1" day
+    [[ -z "$ts" || "$ts" == n/a ]] && { echo "never"; return; }
+    day="$(date -d "$ts" +%F 2>/dev/null)" || { echo "$ts"; return; }
+    case "$day" in
+        "$(date +%F)") date -d "$ts" '+today %H:%M' ;;
+        "$(date -d yesterday +%F)") date -d "$ts" '+yesterday %H:%M' ;;
+        "$(date -d tomorrow +%F)") date -d "$ts" '+tomorrow %H:%M' ;;
+        *) date -d "$ts" '+%a %d %b %H:%M' ;;
+    esac
+}
+
+updates_status() {
+    local result last next
+    if ! systemctl is-enabled --quiet dnf5-automatic.timer 2>/dev/null; then
+        echo "${yellow}automatic updates off${reset} (sudo systemctl enable --now dnf5-automatic.timer)"
+        return
+    fi
+    result="$(systemctl show dnf5-automatic.service -p Result --value 2>/dev/null)"
+    last="$(systemctl show dnf5-automatic.service -p ExecMainStartTimestamp --value 2>/dev/null)"
+    next="$(systemctl show dnf5-automatic.timer -p NextElapseUSecRealtime --value 2>/dev/null)"
+    if [[ -n "$last" && "$last" != n/a && "$result" != success ]]; then
+        echo "${red}last automatic update failed${reset} ($(when "$last")): journalctl -u dnf5-automatic"
+    else
+        echo "automatic, last ran $(when "$last") ${dim}·${reset} next $(when "$next")"
+    fi
+}
+
+# Packages whose update only takes effect after a reboot (as dnf needs-restarting)
+REBOOT_PACKAGES=(glibc systemd systemd-libs linux-firmware dbus-broker dbus-daemon
+    openssl-libs gnutls zlib-ng-compat microcode_ctl akmod-nvidia xorg-x11-drv-nvidia
+    xorg-x11-drv-nvidia-libs mesa-dri-drivers)
+
+reboot_status() {
+    local running newest boot p t why=()
+    running="$(uname -r)"
+    newest="$(rpm -q kernel-core --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' 2>/dev/null | sort -V | tail -n1)"
+    [[ -n "$newest" && "$newest" != "$running" ]] && why+=("kernel $newest")
+    boot="$(awk '/^btime/ {print $2}' /proc/stat)"
+    for p in "${REBOOT_PACKAGES[@]}"; do
+        t="$(rpm -q "$p" --qf '%{INSTALLTIME}\n' 2>/dev/null | sort -n | tail -n1)" || continue
+        [[ "$t" =~ ^[0-9]+$ ]] && ((t > boot)) && why+=("$p")
+    done
+    if ((${#why[@]})); then
+        echo "${yellow}needed${reset}: $(IFS=,; echo "${why[*]}" | sed 's/,/, /g') updated since boot"
+    else
+        echo "not needed"
+    fi
+}
+
 overview() {
     local variant="AMD / Intel"
     rpm -q kansora-nvidia >/dev/null 2>&1 && variant="NVIDIA"
@@ -27,6 +77,8 @@ overview() {
 ${bold}Kansora${reset} ${dim}·${reset} Fedora $(rpm -E %fedora) ${dim}·${reset} ${variant}
   kansora       $(build kansora)
   kansora-dots  $(build kansora-dots)
+  Updates       $(updates_status)
+  Reboot        $(reboot_status)
 
 ${bold}Common commands${reset}
   kansora update            update everything: dnf, flatpaks, firmware
