@@ -204,9 +204,10 @@ check_lint() {
     local ok=0 f
     if command -v shellcheck >/dev/null; then
         shellcheck -S warning \
-            "$kansora"/build-scripts/{build-iso,build-repo,check,ci-setup,ks-render} \
+            "$kansora"/build-scripts/{build-iso,build-live,build-repo,check,ci-setup,ks-render} "$kansora/live/config.sh" \
             "$kansora/files/usr/bin/kansora" "$kansora/files/etc/profile.d/kansora-starship.sh" \
             "$kansora/files/usr/libexec/kansora/setup-greetd" \
+            "$kansora/files-live/usr/libexec/livesys/sessions.d/livesys-niri" \
             "$kdots/bin/kansora-dots" || ok=1
     else
         echo "lint: shellcheck not installed, skipped"
@@ -220,6 +221,25 @@ check_lint() {
     elif [[ "$STRICT" == 1 ]]; then
         echo "lint: ghostty not installed"; ok=1
     fi
+    # Live ISO: well-formed, and it excludes exactly what the kickstart excludes
+    python3 - "$kansora" <<'PYEOF' || ok=1
+import re, sys, xml.etree.ElementTree as ET
+k = sys.argv[1]
+root = ET.parse(f"{k}/live/kansora.kiwi").getroot()
+image = next(p for p in root.iter("packages") if p.get("type") == "image")
+kiwi = {i.get("name") for i in image.iter("ignore")} - {"kernel-*debug*"}
+ks = set()
+inside = False
+for line in open(f"{k}/kickstart/kansora.ks"):
+    line = line.strip()
+    if line.startswith("%packages"): inside = True; continue
+    if line.startswith("%end"): inside = False
+    if inside and line.startswith("-"): ks.add(line[1:])
+if kiwi != ks:
+    print("lint: live/kansora.kiwi and kickstart/kansora.ks exclude different packages")
+    print("  only in kiwi:", sorted(kiwi - ks)); print("  only in kickstart:", sorted(ks - kiwi))
+    sys.exit(1)
+PYEOF
     # Login-screen defaults: every tmpfiles link into /usr/share/kansora/dots must
     # point at a file kdots actually ships
     local target

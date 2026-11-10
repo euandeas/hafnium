@@ -96,6 +96,34 @@ bootstrap-dotfiles REPO:
     # --force-dotfiles: replace the stock ~/.bashrc and the Kansora seeds your repo overrides
     mise bootstrap --from "$repo" --from-dir "$HOME/.dotfiles" --config-dir . --force-dotfiles
 
+# Install the NVIDIA driver (RPM Fusion akmod), build it, and set up Secure Boot if it's on
+enable-nvidia:
+    #!/usr/bin/bash
+    set -euo pipefail
+    # NVIDIA's PCI vendor ID is 10de
+    if ! lspci -nn 2>/dev/null | grep -qiE '(vga|3d|display).*\[10de:'; then
+        read -r -p "No NVIDIA GPU found. Install the driver anyway? [y/N] " ok
+        [[ "$ok" =~ ^[Yy] ]] || exit 0
+    fi
+    if rpm -q kansora-nvidia >/dev/null 2>&1; then
+        echo "kansora-nvidia is already installed."
+    else
+        sudo dnf install -y kansora-nvidia
+    fi
+    kver="$(rpm -q kernel-core --qf '%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -V | tail -n1)"
+    echo "Building the NVIDIA driver for ${kver} (a few minutes)..."
+    sudo akmods --force --kernels "${kver}"
+    sudo dracut --force --kver "${kver}"
+    if mokutil --sb-state 2>/dev/null | grep -q 'SecureBoot enabled'; then
+        echo
+        echo "Secure Boot is on: the driver is signed with this machine's own key, which"
+        echo "has to be enrolled once. Choose a one-time password, then at the next boot"
+        echo "pick 'Enroll MOK' and enter it."
+        sudo mokutil --import /etc/pki/akmods/certs/public_key.der
+    fi
+    echo
+    echo "Done. Reboot to switch to the NVIDIA driver."
+
 # Enrol the akmods signing key so NVIDIA modules load with Secure Boot on (NVIDIA ISO)
 enroll-secure-boot-key:
     #!/usr/bin/bash

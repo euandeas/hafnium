@@ -19,6 +19,11 @@ iso-container variant="kansora":
         -e FEDORA_VERSION={{ fedora_version }} {{ container }} \
         bash -c 'dnf install -y lorax xorriso pykickstart && build-scripts/build-iso {{ variant }} out'
 
+# Build the live ISO in a privileged Fedora container (needs podman; about 30 minutes)
+live-container:
+    sudo podman run --rm -it --privileged -v "$PWD:/src:Z" -w /src {{ container }} \
+        bash -c 'dnf install -y kiwi kiwi-systemdeps distribution-gpg-keys && build-scripts/build-live out'
+
 # Build both ISOs in a container
 isos: (iso-container "kansora") (iso-container "kansora-nvidia")
 

@@ -1,0 +1,26 @@
+#!/usr/bin/sh
+#
+# livesys-niri: Kansora (niri + DMS) setup for livesys.
+# livesys runs this only when booting the live ISO (rd.live.image), before greetd
+# starts. Nothing here reaches installed systems: Anaconda copies the clean image.
+#
+
+# Log liveuser straight into niri through greetd
+cat >> /etc/greetd/config.toml << 'GREETD_EOF'
+
+[initial_session]
+user = "liveuser"
+command = "env XDG_SESSION_TYPE=wayland niri-session"
+GREETD_EOF
+
+# Don't download system updates while running from the USB stick
+systemctl mask --runtime --now dnf5-automatic.timer >/dev/null 2>&1 || :
+
+# Show "Install to Hard Drive" in the DMS launcher (Mod+Space)
+mkdir -p /home/liveuser/.local/share/applications/
+cp /usr/share/applications/liveinst.desktop /home/liveuser/.local/share/applications/
+sed -i 's/NoDisplay=true/NoDisplay=false/' /home/liveuser/.local/share/applications/liveinst.desktop
+
+echo "echo 'To install Kansora: Mod+Space, then \"Install to Hard Drive\" (or run liveinst)'" >> /home/liveuser/.bashrc
+
+chown --recursive liveuser:liveuser /home/liveuser/

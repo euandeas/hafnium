@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Build the Kansora live ISO with kiwi (description: live/kansora.kiwi).
+#
+#   build-scripts/build-live [output-dir]
+#
+# Needs root plus kiwi, kiwi-systemdeps and distribution-gpg-keys; CI runs it in
+# a privileged Fedora container. Env: FEDORA_VERSION (default 45).
+set -euo pipefail
+
+outdir="$(readlink -m "${1:-out}")"
+here="$(dirname "$(readlink -f "$0")")"
+FEDORA_VERSION="${FEDORA_VERSION:-45}"
+work="$outdir/live-build"
+name="kansora-live-${FEDORA_VERSION}-x86_64.iso"
+limit=$((2 * 1024 * 1024 * 1024))   # GitHub release asset limit
+
+rm -rf "$work"
+mkdir -p "$outdir"
+kiwi-ng --type iso system build --description "$here/../live" --target-dir "$work"
+
+iso="$(find "$work" -maxdepth 1 -name '*.iso' | head -n1)"
+[[ -n "$iso" ]] || { echo "build-live: kiwi produced no ISO" >&2; exit 1; }
+mv "$iso" "$outdir/$name"
+(cd "$outdir" && sha256sum "$name" > "$name.sha256")
+rm -rf "$work"
+
+size="$(stat -c %s "$outdir/$name")"
+printf 'built %s: %d MiB\n' "$outdir/$name" "$((size / 1024 / 1024))"
+if ((size >= limit)); then
+    echo "build-live: ISO is over 2 GiB, too big for a GitHub release" >&2
+    exit 1
+fi

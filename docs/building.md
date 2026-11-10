@@ -31,6 +31,16 @@ For kdots changes to publish immediately, add a `KANSORA_DISPATCH_TOKEN` secret 
 kdots: a fine-grained token with *Actions: Read and write* on this repo. Otherwise
 they go out with the nightly build.
 
+## Live ISO (testing)
+
+[`live/kansora.kiwi`](../live/kansora.kiwi) builds `kansora-live-45-x86_64.iso` with
+kiwi, the way Fedora builds its live spins. It boots into niri as `liveuser`
+([`livesys-niri`](../files-live/usr/libexec/livesys/sessions.d/livesys-niri), from the
+`kansora-live` package) and installs with Anaconda's live installer, which copies the
+image to disk. NVIDIA users run nouveau until `kansora enable-nvidia`.
+[`build-live.yml`](../.github/workflows/build-live.yml) builds it after changes to
+`live/` and weekly; the check keeps its package exclusions in step with the kickstart.
+
 ## Locally
 
 | Command | Does |
@@ -39,6 +49,7 @@ they go out with the nightly build.
 | `just ks` | render and validate the kickstarts |
 | `just repo` | build the RPMs and repo into `out/repo` |
 | `just iso-container <kansora\|kansora-nvidia>` | build an ISO into `out/` |
+| `just live-container` | build the live ISO into `out/` |
 | `just vm <variant>` | boot an ISO in a UEFI QEMU VM |
 
 `just check` and `just repo` expect kdots checked out at `../kdots`.

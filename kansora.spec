@@ -138,6 +138,15 @@ Requires:       mokutil
 Proprietary NVIDIA driver from RPM Fusion (akmod), plus Kansora's modprobe and
 dracut defaults for niri on NVIDIA. Needs the RPM Fusion free and nonfree repos.
 
+%package live
+Summary:        Live ISO session for Kansora
+Requires:       kansora = %{version}-%{release}
+Requires:       livesys-scripts
+%description live
+The livesys handler for Kansora's live ISO: logs liveuser into niri through
+greetd and shows the installer in the DMS launcher. Only the live image installs
+this, and it does nothing outside a live boot.
+
 %prep
 %autosetup -n %{name}-%{version}
 
@@ -148,6 +157,7 @@ cp -a files/. %{buildroot}/
 install -d %{buildroot}%{_sysconfdir}/yum.repos.d
 install -pm0644 repos/*.repo %{buildroot}%{_sysconfdir}/yum.repos.d/
 cp -a nvidia/. %{buildroot}/
+cp -a files-live/. %{buildroot}/
 install -d %{buildroot}%{_sysconfdir}/fonts/conf.d
 ln -s ../../..%{_datadir}/fontconfig/conf.avail/50-kansora-monospace.conf \
     %{buildroot}%{_sysconfdir}/fonts/conf.d/50-kansora-monospace.conf
@@ -214,6 +224,9 @@ fi
 
 %files codecs
 # metapackage
+
+%files live
+%{_libexecdir}/livesys/sessions.d/livesys-niri
 
 %files nvidia
 %{_modprobedir}/kansora-nvidia.conf
