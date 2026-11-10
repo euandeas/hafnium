@@ -17,6 +17,11 @@ on:
     - cron: "0 5 * * *"
   workflow_dispatch:
 
+# A newer build supersedes an older one: they all upload to the same release
+concurrency:
+  group: build-live
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
