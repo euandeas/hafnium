@@ -45,7 +45,11 @@ jobs:
 
       - name: Publish to the rolling "latest" release
         if: github.ref == 'refs/heads/main'
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release upload latest out/kansora-live-*.iso out/kansora-live-*.iso.sha256 --clobber
+        run: |
+          gh release upload latest out/kansora-live-*.iso out/kansora-live-*.iso.sha256 --clobber
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/latest" -f sha="${GITHUB_SHA}" -F force=true >/dev/null
+          gh release edit latest --notes "Rolling build of the Kansora live ISO, rebuilt nightly (last: ${GITHUB_SHA::7}, $(date -u +%Y-%m-%d)). Boot it for a live session, then choose Install to Hard Drive from the launcher (Mod+Space). NVIDIA: run \`kansora enable-nvidia\` after installing."
