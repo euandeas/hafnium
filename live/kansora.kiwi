@@ -3,7 +3,7 @@
   Kansora live ISO: boots straight into niri + DMS and installs with Anaconda's
   live installer, which copies this image to disk.
   Modelled on Fedora's own live spins: https://pagure.io/fedora-kiwi-descriptions
-  Package set and exclusions match kickstart/kansora.ks. Build: build-scripts/build-live
+  This file is the package set: build-scripts/check dry-runs it nightly. Build: build-scripts/build-live
 -->
 <image schemaversion="7.4" name="Kansora">
 	<description type="system">
@@ -28,7 +28,7 @@
 		</type>
 	</preferences>
 
-	<!-- The same repos the kickstart uses -->
+	<!-- Fedora, RPM Fusion, Terra, the Dux COPRs and Kansora's own repo -->
 	<repository type="rpm-md" alias="fedora" sourcetype="metalink">
 		<source path="https://mirrors.fedoraproject.org/metalink?repo=fedora-$releasever&amp;arch=$basearch">
 			<signing key="file:///usr/share/distribution-gpg-keys/fedora/RPM-GPG-KEY-fedora-$releasever-primary"/>
@@ -111,7 +111,6 @@
 		<ignore name="sos"/>
 		<ignore name="dracut-config-rescue"/>
 		<ignore name="sssd*"/>
-		<ignore name="realmd"/>
 		<ignore name="PackageKit"/>
 		<ignore name="PackageKit-glib"/>
 		<ignore name="abrt*"/>
@@ -133,7 +132,9 @@
 		<ignore name="deltarpm"/>
 	</packages>
 
-	<!-- Live-only: Anaconda's live installer and the live session -->
+	<!-- Live session and installer. Anaconda copies the whole image to disk, so
+	     these end up on installed systems too (realmd included: the installer
+	     requires it, so it can't be excluded above). -->
 	<packages type="iso" patternType="plusRecommended">
 		<namedCollection name="anaconda-tools"/>
 		<package name="anaconda-install-env-deps"/>

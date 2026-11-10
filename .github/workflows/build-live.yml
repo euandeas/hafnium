@@ -12,7 +12,9 @@ on:
       - "build-scripts/build-live"
       - ".github/workflows/build-live.yml"
   schedule:
-    - cron: "0 5 * * 2"
+    # Nightly, after the package repo's 04:00 build, so the ISO always has
+    # current packages and a broken dependency shows up the next morning
+    - cron: "0 5 * * *"
   workflow_dispatch:
 
 permissions:

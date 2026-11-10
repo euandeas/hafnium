@@ -4,30 +4,12 @@ container := "registry.fedoraproject.org/fedora:" + fedora_version
 default:
     @just --list
 
-# Render and validate both kickstarts into out/
-ks:
-    build-scripts/ks-render kansora out/kansora.ks
-    build-scripts/ks-render kansora-nvidia out/kansora-nvidia.ks
-
-# Build an installer ISO on the host (needs lorax and xorriso)
-iso variant="kansora":
-    FEDORA_VERSION={{ fedora_version }} build-scripts/build-iso {{ variant }} out
-
-# Build an installer ISO inside a Fedora container (needs podman only)
-iso-container variant="kansora":
-    sudo podman run --rm -it --privileged -v "$PWD:/src:Z" -w /src \
-        -e FEDORA_VERSION={{ fedora_version }} {{ container }} \
-        bash -c 'dnf install -y lorax xorriso pykickstart && build-scripts/build-iso {{ variant }} out'
-
 # Build the live ISO in a privileged Fedora container (needs podman; about 30 minutes)
 live-container:
     sudo podman run --rm -it --privileged -v "$PWD:/src:Z" -w /src {{ container }} \
         bash -c 'dnf install -y kiwi kiwi-systemdeps distribution-gpg-keys && build-scripts/build-live out'
 
-# Build both ISOs in a container
-isos: (iso-container "kansora") (iso-container "kansora-nvidia")
-
-# Run the CI checks (build, kickstarts, install dry-run, dotfiles, lint) in a Fedora container
+# Run the CI checks (build, install dry-run, dotfiles, lint) in a Fedora container
 check kdots="../kdots":
     podman run --rm -it -v "$PWD:/kansora:Z" -v "$(realpath {{ kdots }}):/kdots:Z" -w /kansora {{ container }} \
         bash -c 'build-scripts/ci-setup && STRICT=1 build-scripts/check /kdots out/check'
@@ -40,12 +22,13 @@ repo kdots="../kdots":
             && git config --global --add safe.directory "*" \
             && build-scripts/build-repo /kdots out'
 
-# Boot an ISO in a UEFI VM with a 40G scratch disk (needs qemu + edk2-ovmf)
-vm variant="kansora":
+# Boot the live ISO (out/kansora-live-*.iso) in a UEFI VM with a 40G scratch disk
+# (needs qemu + edk2-ovmf; get the ISO with `just live-container` or from the release)
+vm:
     #!/usr/bin/env bash
     set -euo pipefail
-    iso="out/{{ variant }}-{{ fedora_version }}-x86_64.iso"
-    disk="out/{{ variant }}-test.qcow2"
+    iso="out/kansora-live-{{ fedora_version }}-x86_64.iso"
+    disk="out/kansora-test.qcow2"
     [[ -f "$disk" ]] || qemu-img create -f qcow2 "$disk" 40G
     cp -n /usr/share/edk2/ovmf/OVMF_VARS.fd out/OVMF_VARS.fd || :
     qemu-system-x86_64 -enable-kvm -m 6G -smp 4 -cpu host \
@@ -58,7 +41,3 @@ vm variant="kansora":
 
 clean:
     rm -rf out .build
-
-# Remove the cached upstream netinstall ISO too
-clean-all: clean
-    rm -rf cache

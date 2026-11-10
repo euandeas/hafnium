@@ -173,7 +173,7 @@ if [ "$1" -eq 1 ]; then
         flatpak-add-fedora-repos.service >/dev/null 2>&1 || :
     systemctl --global preset dms.service dsearch.service >/dev/null 2>&1 || :
     systemctl set-default graphical.target >/dev/null 2>&1 || :
-    # Quiet boot: Flexoki splash (the initramfs is rebuilt by the kickstart / next kernel)
+    # Quiet boot: Flexoki splash, picked up by the next initramfs build
     plymouth-set-default-theme kansora >/dev/null 2>&1 || :
     grub2-editenv - set menu_auto_hide=1 >/dev/null 2>&1 || :
 fi

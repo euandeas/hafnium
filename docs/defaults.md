@@ -7,7 +7,7 @@
 | `kansora` | The desktop: niri, DMS (with cava and extra image formats), dms-greeter on greetd, Ghostty, Dux Files, PipeWire, Flatpak, mise, CUPS printing. Also the system defaults below and the `kansora` command |
 | `kansora-repos` | Repo files for this repo's package repo and the Dux COPRs; pulls in the RPM Fusion and Terra release packages |
 | `kansora-codecs` | `ffmpeg`, GStreamer codecs, `mesa-va-drivers-freeworld` |
-| `kansora-nvidia` | `akmod-nvidia` from RPM Fusion, nouveau blacklist, early KMS |
+| `kansora-nvidia` | `akmod-nvidia` from RPM Fusion, nouveau blacklist, early KMS. Installed by `kansora enable-nvidia` |
 | `kansora-dots` | Default dotfiles ([kdots](https://github.com/euandeas/kdots)) |
 
 ## System defaults

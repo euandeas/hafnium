@@ -4,9 +4,10 @@
 #   build-scripts/check <kdots-checkout> [work-dir]
 #
 #   packages   build all RPMs + the dnf repo (build-repo), rpmlint (advisory)
-#   kickstart  render and ksvalidator both kickstarts
-#   resolve    dry-run each kickstart's %packages against the real repos plus the
-#              freshly built RPMs, the same transaction Anaconda will do
+#   resolve    dry-run the live image's package set (live/kansora.kiwi) against the
+#              real repos plus the freshly built RPMs. Installs copy that image, so
+#              this is the installed system; again with kansora-nvidia, which
+#              `kansora enable-nvidia` adds
 #   dotfiles   run kansora-dots in a throwaway $HOME (mise layer, seeds, DMS
 #              defaults), then `niri validate` the result
 #   lint       shellcheck, JSON syntax, Justfile syntax
@@ -19,7 +20,7 @@ kdots="$(readlink -f "${1:?usage: check <kdots-checkout> [work-dir]}")"
 work="$(readlink -m "${2:-out/check}")"
 kansora="$(readlink -f "$(dirname "$(readlink -f "$0")")/..")"
 FEDORA_VERSION="${FEDORA_VERSION:-45}"
-CHECKS="${CHECKS:-packages kickstart resolve dotfiles lint}"
+CHECKS="${CHECKS:-packages resolve dotfiles lint}"
 STRICT="${STRICT:-0}"
 
 failed=() skipped=() passed=()
@@ -57,22 +58,11 @@ check_packages() {
     fi
 }
 
-# --- kickstart -----------------------------------------------------------------
-check_kickstart() {
-    local v ok=0
-    for v in kansora kansora-nvidia; do
-        FEDORA_VERSION="$FEDORA_VERSION" "$kansora/build-scripts/ks-render" "$v" "$work/ks/$v.ks" || ok=1
-    done
-    return $ok
-}
-
 # --- resolve -------------------------------------------------------------------
-# Everything the kickstart's %packages asks for, plus what Anaconda adds itself.
-ANACONDA_EXTRAS=(kernel grub2-efi-x64 shim-x64 grub2-pc efibootmgr btrfs-progs lvm2 cryptsetup langpacks-en)
 # Pulled in by weak deps but replaced by DMS / Ghostty
 UNWANTED=(alacritty fuzzel swaylock swayidle swaybg waybar mako foot kitty sos dracut-config-rescue)
 
-write_repos() { # write_repos <dir>: the repos Anaconda gets from the kickstart
+write_repos() { # write_repos <dir>: the repos live/kansora.kiwi installs from
     local d="$1"
     mkdir -p "$d"
     cat > "$d/check.repo" <<EOF
@@ -109,41 +99,57 @@ EOF
     cp "$kansora"/repos/_copr*.repo "$d/"
 }
 
+# kiwi_specs <type...>: print "install <spec>" / "exclude <name>" for the kiwi
+# <packages type="..."> sections given (namedCollection becomes @group)
+kiwi_specs() {
+    python3 - "$kansora/live/kansora.kiwi" "$@" <<'PYEOF'
+import sys, xml.etree.ElementTree as ET
+root = ET.parse(sys.argv[1]).getroot()
+for section in root.iter("packages"):
+    if section.get("type") not in sys.argv[2:]:
+        continue
+    for el in section:
+        if el.tag == "namedCollection": print("install @" + el.get("name"))
+        elif el.tag == "package": print("install " + el.get("name"))
+        elif el.tag == "ignore": print("exclude " + el.get("name"))
+PYEOF
+}
+
 check_resolve() {
     compgen -G "$work/build/repo/kansora-[0-9]*.rpm" >/dev/null || { echo "resolve: needs the packages check"; return 1; }
-    [[ -f "$work/ks/kansora.ks" ]] || { echo "resolve: needs the kickstart check"; return 1; }
     local v ok=0 root="$work/resolve-root" reposdir="$work/resolve-repos" log
     write_repos "$reposdir"
-    for v in kansora kansora-nvidia; do
-        local install=() exclude=()
-        while read -r line; do
-            case "$line" in
-                "" | "#"*) ;;
-                -*) exclude+=("${line#-}") ;;
-                *) install+=("$line") ;;
-            esac
-        done < <(sed -n '/^%packages/,/^%end/{/^%/d;p}' "$work/ks/$v.ks")
-        # The freshly built RPMs stand in for the GitHub Pages repo. kansora-nvidia
-        # only goes into the NVIDIA transaction.
+    # live: everything kiwi installs into the image, which is what installs copy
+    # nvidia: that plus kansora-nvidia, as after `kansora enable-nvidia`
+    for v in live nvidia; do
+        local install=() exclude=() kind spec
+        while read -r kind spec; do
+            [[ "$kind" == install ]] && install+=("$spec") || exclude+=("$spec")
+        done < <(kiwi_specs image iso)
+        # The freshly built RPMs stand in for the GitHub Pages repo (kiwi pulls
+        # kansora, kansora-live etc. from there)
         local rpm built=()
         for rpm in "$work"/build/repo/kansora*.rpm; do
-            [[ "$rpm" == */kansora-nvidia-[0-9]* && "$v" != kansora-nvidia ]] && continue
+            [[ "$rpm" == */kansora-nvidia-[0-9]* && "$v" != nvidia ]] && continue
             built+=("$rpm")
         done
+        # Their names come from the files above, so drop the bare names from the spec list
+        local i
+        for i in "${!install[@]}"; do [[ "${install[$i]}" == kansora* ]] && unset 'install[i]'; done
         rm -rf "$root" && mkdir -p "$root"
         log="$work/resolve-$v.log"
-        echo "resolve: $v (${#install[@]} specs, excluding: ${exclude[*]:-none})"
+        echo "resolve: $v (${#install[@]} specs + ${#built[@]} Kansora RPMs, excluding: ${exclude[*]:-none})"
         dnf install --assumeno --installroot="$root" --releasever="$FEDORA_VERSION" \
             --setopt=reposdir="$reposdir" --setopt=install_weak_deps=True \
             --setopt=gpgcheck=0 --setopt=cachedir="$work/dnf-cache" \
             ${exclude:+--exclude="$(IFS=,; echo "${exclude[*]}")"} \
-            "${install[@]}" "${ANACONDA_EXTRAS[@]}" "${built[@]}" >"$log" 2>&1
+            "${install[@]}" "${built[@]}" >"$log" 2>&1
         if grep -q 'Operation aborted by the user' "$log"; then
             grep -E 'Total size of inbound|^Install +[0-9]+ packages' "$log" | sed "s/^/resolve: $v: /"
             local pkg
             for pkg in "${UNWANTED[@]}"; do
                 if grep -qE "^ $pkg " "$log"; then
-                    echo "resolve: $v would install $pkg, which Kansora doesn't want (add -$pkg to %packages)"
+                    echo "resolve: $v would install $pkg, which Kansora doesn't want (add <ignore name=\"$pkg\"/> to live/kansora.kiwi)"
                     ok=1
                 fi
             done
@@ -204,7 +210,7 @@ check_lint() {
     local ok=0 f
     if command -v shellcheck >/dev/null; then
         shellcheck -S warning \
-            "$kansora"/build-scripts/{build-iso,build-live,build-repo,check,ci-setup,ks-render} "$kansora/live/config.sh" \
+            "$kansora"/build-scripts/{build-live,build-repo,check,ci-setup} "$kansora/live/config.sh" \
             "$kansora/files/usr/bin/kansora" "$kansora/files/etc/profile.d/kansora-starship.sh" \
             "$kansora/files/usr/libexec/kansora/setup-greetd" \
             "$kansora/files-live/usr/libexec/livesys/sessions.d/livesys-niri" \
@@ -221,25 +227,9 @@ check_lint() {
     elif [[ "$STRICT" == 1 ]]; then
         echo "lint: ghostty not installed"; ok=1
     fi
-    # Live ISO: well-formed, and it excludes exactly what the kickstart excludes
-    python3 - "$kansora" <<'PYEOF' || ok=1
-import re, sys, xml.etree.ElementTree as ET
-k = sys.argv[1]
-root = ET.parse(f"{k}/live/kansora.kiwi").getroot()
-image = next(p for p in root.iter("packages") if p.get("type") == "image")
-kiwi = {i.get("name") for i in image.iter("ignore")} - {"kernel-*debug*"}
-ks = set()
-inside = False
-for line in open(f"{k}/kickstart/kansora.ks"):
-    line = line.strip()
-    if line.startswith("%packages"): inside = True; continue
-    if line.startswith("%end"): inside = False
-    if inside and line.startswith("-"): ks.add(line[1:])
-if kiwi != ks:
-    print("lint: live/kansora.kiwi and kickstart/kansora.ks exclude different packages")
-    print("  only in kiwi:", sorted(kiwi - ks)); print("  only in kickstart:", sorted(ks - kiwi))
-    sys.exit(1)
-PYEOF
+    # Live ISO description must parse (the resolve check reads it too)
+    python3 -c 'import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])' "$kansora/live/kansora.kiwi" \
+        || { echo "lint: live/kansora.kiwi is not valid XML"; ok=1; }
     # Login-screen defaults: every tmpfiles link into /usr/share/kansora/dots must
     # point at a file kdots actually ships
     local target
@@ -266,7 +256,6 @@ PYEOF
 for c in $CHECKS; do
     case "$c" in
         packages)  need packages make rpmbuild createrepo_c git && run packages check_packages ;;
-        kickstart) need kickstart ksvalidator && run kickstart check_kickstart ;;
         resolve)   need resolve dnf && run resolve check_resolve ;;
         dotfiles)
             if ((EUID == 0)); then

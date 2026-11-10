@@ -7,16 +7,13 @@ It's a normal dnf-managed install, not an image, inspired by
 
 ## Install
 
-Download an ISO from [Releases](../../releases/tag/latest):
+Download `kansora-live-45-x86_64.iso` from [Releases](../../releases/tag/latest),
+write it to a USB stick and boot it. It starts a live Kansora session; open the
+launcher (Mod+Space) and choose **Install to Hard Drive**. No internet needed.
 
-- `kansora-45-x86_64.iso`: AMD / Intel
-- `kansora-nvidia-45-x86_64.iso`: NVIDIA
-
-Write it to a USB stick and boot it. Anaconda asks for disk, language and user as
-usual. The rest is set by the kickstart, and it needs internet access.
-
-**NVIDIA with Secure Boot:** run `kansora enroll-secure-boot-key` once, reboot and
-choose *Enroll MOK*.
+**NVIDIA:** the live session and a fresh install use the open nouveau driver. Run
+`kansora enable-nvidia` after installing to switch to NVIDIA's driver (it handles
+Secure Boot too).
 
 ## What you get
 
@@ -50,8 +47,9 @@ Put niri changes in `~/.config/niri/local.kdl`.
 ## Building
 
 ```sh
-just check                  # run the CI checks locally (needs ../kdots and podman)
-just iso-container kansora  # build an ISO
+just check           # run the CI checks locally (needs ../kdots and podman)
+just live-container  # build the live ISO
+just vm              # boot it in a VM
 ```
 
 See [docs/building.md](docs/building.md) for the workflows and package repo.

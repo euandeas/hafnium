@@ -1,7 +1,7 @@
 name: Check
 
-# Builds the packages, validates the kickstarts, dry-runs the full install
-# transaction against the real repos, tests the default dotfiles end to end
+# Builds the packages, dry-runs the live image's install transaction (and the
+# NVIDIA one) against the real repos, tests the default dotfiles end to end
 # (mise + DMS + niri validate) and lints scripts. See build-scripts/check.
 # Also called by repo.yml so nothing is published unless this passes.
 
