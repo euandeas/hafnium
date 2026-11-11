@@ -65,7 +65,8 @@ jobs:
         env:
           TEST_BUILD: ${{ github.ref != 'refs/heads/main' && '1' || '' }}
         run: |
-          sudo podman run --rm --privileged -e TEST_BUILD \
+          # sudo drops the environment, so pass TEST_BUILD's value explicitly
+          sudo podman run --rm --privileged -e TEST_BUILD="$TEST_BUILD" \
             -v "$PWD:/src:Z" -w /src \
             registry.fedoraproject.org/fedora:45 \
             bash -c 'set -e
@@ -79,6 +80,10 @@ jobs:
                      fi
                      build-scripts/build-live out'
           ls -la out
+          if [ -n "$TEST_BUILD" ] && [ ! -d out/pkgs/repo ]; then
+              echo "Test ISO was built from the published packages, not this branch's" >&2
+              exit 1
+          fi
 
       - name: Upload the test ISO
         if: github.ref != 'refs/heads/main'
