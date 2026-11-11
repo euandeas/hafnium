@@ -6,7 +6,7 @@ ModuleName=two-step
 [two-step]
 Font=Cantarell 12
 TitleFont=Cantarell Light 30
-# watermark.png and throbber-*.png are Kansora's (build-scripts/render-branding);
+# watermark.png and throbber-*.png are Kansora's;
 # the password prompt images link to the spinner theme's
 ImageDir=/usr/share/plymouth/themes/kansora
 DialogHorizontalAlignment=.5

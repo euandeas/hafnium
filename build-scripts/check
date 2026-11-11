@@ -246,8 +246,6 @@ check_lint() {
             || { echo "lint: plymouth $img.png links somewhere unexpected"; ok=1; }; continue; }
         [[ -f "$theme/$img.png" ]] || { echo "lint: plymouth theme is missing $img.png"; ok=1; }
     done
-    python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$kansora/build-scripts/render-branding" \
-        || { echo "lint: build-scripts/render-branding does not compile"; ok=1; }
     if command -v fastfetch >/dev/null; then
         fastfetch --config "$kdots/fastfetch/config.jsonc" --pipe >/dev/null 2>&1 \
             || { echo "lint: fastfetch rejects kdots/fastfetch/config.jsonc"; ok=1; }
