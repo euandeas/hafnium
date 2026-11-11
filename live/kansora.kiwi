@@ -74,6 +74,9 @@
 
 	<packages type="bootstrap">
 		<package name="fedora-release"/>
+		<!-- fedora-release needs an identity; name Kansora's, or dnf may pick any
+		     fedora-release-identity-* (e.g. budgie), which kansora can't replace -->
+		<package name="kansora-release-identity"/>
 		<package name="filesystem"/>
 		<package name="grubby"/>
 	</packages>

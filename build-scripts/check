@@ -252,6 +252,10 @@ check_lint() {
     # Live ISO description must parse (the resolve check reads it too)
     python3 -c 'import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])' "$kansora/live/kansora.kiwi" \
         || { echo "lint: live/kansora.kiwi is not valid XML"; ok=1; }
+    # kiwi installs the bootstrap packages first, on their own: without Kansora's
+    # identity there, dnf picks any fedora-release-identity-* for fedora-release
+    kiwi_specs bootstrap | grep -qx 'install kansora-release-identity' \
+        || { echo "lint: live/kansora.kiwi's bootstrap packages must include kansora-release-identity"; ok=1; }
     # Login-screen defaults: every tmpfiles link into /usr/share/kansora/dots must
     # point at a file kdots actually ships
     local target
