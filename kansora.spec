@@ -80,6 +80,7 @@ Requires:       dnf5-plugin-automatic
 Requires:       plymouth
 Requires:       plymouth-plugin-two-step
 Requires:       plymouth-theme-spinner
+Requires:       hicolor-icon-theme
 Requires:       systemd-resolved
 
 # --- Tooling -------------------------------------------------------------------
@@ -215,6 +216,10 @@ fi
 %{_unitdir}/dnf5-automatic.service.d/50-kansora.conf
 %{_datadir}/dnf5/libdnf.conf.d/80-kansora.conf
 %{_datadir}/plymouth/themes/kansora/
+%{_datadir}/icons/hicolor/*/apps/kansora.png
+%{_datadir}/icons/hicolor/scalable/apps/kansora.svg
+%{_datadir}/icons/hicolor/symbolic/apps/kansora-symbolic.svg
+%{_datadir}/pixmaps/kansora.svg
 %{_datadir}/kansora/themes/
 %{_datadir}/backgrounds/kansora/
 %{_tmpfilesdir}/kansora-greeter.conf

@@ -238,6 +238,16 @@ check_lint() {
             || { echo "lint: kansora-greeter.conf links to missing $target"; ok=1; }
     done < <(awk '$1 == "L" && $7 ~ "^/usr/share/kansora/dots/" {print $7}' \
                  "$kansora/files/usr/lib/tmpfiles.d/kansora-greeter.conf")
+    # Boot splash: every image two-step loads must be in the theme, or link to
+    # one the spinner theme (a Requires) ships
+    local theme="$kansora/files/usr/share/plymouth/themes/kansora" img
+    for img in watermark throbber-0001 lock entry bullet; do
+        [[ -L "$theme/$img.png" ]] && { [[ "$(readlink "$theme/$img.png")" == ../spinner/$img.png ]] \
+            || { echo "lint: plymouth $img.png links somewhere unexpected"; ok=1; }; continue; }
+        [[ -f "$theme/$img.png" ]] || { echo "lint: plymouth theme is missing $img.png"; ok=1; }
+    done
+    python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$kansora/build-scripts/render-branding" \
+        || { echo "lint: build-scripts/render-branding does not compile"; ok=1; }
     if command -v fastfetch >/dev/null; then
         fastfetch --config "$kdots/fastfetch/config.jsonc" --pipe >/dev/null 2>&1 \
             || { echo "lint: fastfetch rejects kdots/fastfetch/config.jsonc"; ok=1; }
