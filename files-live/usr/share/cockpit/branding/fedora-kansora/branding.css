@@ -1,0 +1,35 @@
+/* Kansora branding for the Anaconda web UI (which runs in Cockpit).
+   Cockpit picks branding/<os-release ID>-<VARIANT_ID>/ first, so this is
+   used over branding/fedora/; any file missing here falls back to that. */
+#badge {
+    inline-size: 80px;
+    block-size: 80px;
+    background-image: url("logo.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+#brand::before {
+    content: "${NAME}";
+}
+
+.anaconda {
+    /* Flexoki blue 400, 600, 700 */
+    --brand-default-light: #4385be;
+    --brand-default: #205ea6;
+    --brand-default-dark: #1a4f8c;
+
+    .logo {
+        background-image: url("logo.png");
+    }
+}
+
+:not(.pf-v6-theme-dark) .anaconda {
+    --pf-t--global--color--brand--default: var(--brand-default);
+    --pf-t--global--color--brand--hover: var(--brand-default-dark);
+}
+
+.pf-v6-theme-dark .anaconda {
+    --pf-t--global--color--brand--default: var(--brand-default-light);
+    --pf-t--global--color--brand--hover: var(--brand-default);
+}

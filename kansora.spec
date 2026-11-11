@@ -17,6 +17,8 @@ Provides:       hafnium = %{version}-%{release}
 Requires:       kansora-repos = %{version}-%{release}
 Requires:       kansora-dots
 Requires:       kansora-codecs = %{version}-%{release}
+# os-release says Kansora (built per Fedora release: identity/kansora-release-identity.spec)
+Requires:       kansora-release-identity
 
 # --- Compositor and session ----------------------------------------------------
 Requires:       niri
@@ -80,6 +82,7 @@ Requires:       dnf5-plugin-automatic
 Requires:       plymouth
 Requires:       plymouth-plugin-two-step
 Requires:       plymouth-theme-spinner
+Requires:       hicolor-icon-theme
 Requires:       systemd-resolved
 
 # --- Tooling -------------------------------------------------------------------
@@ -142,6 +145,9 @@ dracut defaults for niri on NVIDIA. Needs the RPM Fusion free and nonfree repos.
 Summary:        Live ISO session for Kansora
 Requires:       kansora = %{version}-%{release}
 Requires:       livesys-scripts
+# Owners of the profile and branding directories
+Requires:       anaconda-core
+Requires:       cockpit-ws
 %description live
 The livesys handler for Kansora's live ISO: logs liveuser into niri through
 greetd and shows the installer in the DMS launcher. Only the live image installs
@@ -215,7 +221,12 @@ fi
 %{_unitdir}/dnf5-automatic.service.d/50-kansora.conf
 %{_datadir}/dnf5/libdnf.conf.d/80-kansora.conf
 %{_datadir}/plymouth/themes/kansora/
+%{_datadir}/icons/hicolor/*/apps/kansora.png
+%{_datadir}/icons/hicolor/scalable/apps/kansora.svg
+%{_datadir}/icons/hicolor/symbolic/apps/kansora-symbolic.svg
+%{_datadir}/pixmaps/kansora.svg
 %{_datadir}/kansora/themes/
+%{_datadir}/kansora/branding/
 %{_datadir}/backgrounds/kansora/
 %{_tmpfilesdir}/kansora-greeter.conf
 
@@ -227,6 +238,11 @@ fi
 
 %files live
 %{_libexecdir}/livesys/sessions.d/livesys-niri
+# Installer: Kansora profile (picked by VARIANT_ID=kansora) and web UI branding
+%config(noreplace) %{_sysconfdir}/anaconda/profile.d/kansora.conf
+%dir %{_datadir}/cockpit/branding/fedora-kansora
+%{_datadir}/cockpit/branding/fedora-kansora/branding.css
+%{_datadir}/cockpit/branding/fedora-kansora/logo.png
 
 %files nvidia
 %{_modprobedir}/kansora-nvidia.conf

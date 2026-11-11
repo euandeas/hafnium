@@ -1,20 +1,22 @@
 [Plymouth Theme]
 Name=Kansora
-Description=Fedora's spinner on a Flexoki background.
+Description=The Kansora K above three dots, on Flexoki black.
 ModuleName=two-step
 
 [two-step]
 Font=Cantarell 12
 TitleFont=Cantarell Light 30
-ImageDir=/usr/share/plymouth/themes/spinner
+# watermark.png and throbber-*.png are Kansora's;
+# the password prompt images link to the spinner theme's
+ImageDir=/usr/share/plymouth/themes/kansora
 DialogHorizontalAlignment=.5
-DialogVerticalAlignment=.382
+DialogVerticalAlignment=.7
 TitleHorizontalAlignment=.5
-TitleVerticalAlignment=.382
+TitleVerticalAlignment=.7
 HorizontalAlignment=.5
-VerticalAlignment=.7
+VerticalAlignment=.58
 WatermarkHorizontalAlignment=.5
-WatermarkVerticalAlignment=.96
+WatermarkVerticalAlignment=.45
 Transition=none
 TransitionDuration=0.0
 BackgroundStartColor=0x100f0f

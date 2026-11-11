@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="files/usr/share/kansora/branding/kansora-dark.svg">
+    <img src="files/usr/share/kansora/branding/kansora.svg" alt="Kansora logo: a K drawn in two strokes" width="96">
+  </picture>
+</p>
+
 # Kansora
 
 A minimal Fedora 45 desktop with [niri](https://niri-wm.github.io/niri/),

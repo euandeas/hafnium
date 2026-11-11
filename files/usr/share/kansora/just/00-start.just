@@ -38,6 +38,9 @@ upgrade-fedora RELEASE="":
     check "Terra"               repomd  "https://repos.fyralabs.com/terra${target}/repodata/repomd.xml"
     check "Dux (dms)"           repomd  "https://download.copr.fedorainfracloud.org/results/duxlabs/dms/fedora-${target}-x86_64/repodata/repomd.xml"
     check "Dux (dux-repo)"      repomd  "https://download.copr.fedorainfracloud.org/results/duxlabs/dux-repo/fedora-${target}-x86_64/repodata/repomd.xml"
+    # Kansora's own repo per release carries kansora-release-identity for it; without
+    # it, the upgrade would have no identity to satisfy fedora-release-common
+    check "Kansora"             repomd  "https://euandeas.github.io/kansora/repo/${target}/repodata/repomd.xml"
 
     if ((missing)); then
         echo

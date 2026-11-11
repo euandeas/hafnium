@@ -3,15 +3,22 @@
 #
 #   build-scripts/build-repo <kdots-checkout> <output-dir>
 #
-# Output: <output-dir>/repo/{*.rpm,repodata/}, ready to serve at
-# https://euandeas.github.io/kansora/repo/
-# Needs: git, make, rpm-build, systemd-rpm-macros, createrepo_c. Both checkouts
-# need full git history: the Release number is the commit count.
+# Output, ready to serve at https://euandeas.github.io/kansora/repo/:
+#   <output-dir>/repo/{*.rpm,repodata/}        Fedora FEDORA_VERSION (default 45):
+#                                              the installer and older kansora.repo files
+#   <output-dir>/repo/<N>/{*.rpm,repodata/}    one per Fedora release, for kansora.repo's
+#                                              $releasever; N+1 too once Fedora has it
+# Every repo has the same kansora/kansora-dots RPMs. Only kansora-release-identity
+# differs: it is built per release, to match that release's fedora-release exactly.
+# Needs: git, make, rpm-build, systemd-rpm-macros, createrepo_c, dnf, cpio, and
+# network access to Fedora's repos. Both checkouts need full git history: the
+# Release number is the commit count.
 set -euo pipefail
 
 kdots="$(readlink -f "${1:?usage: build-repo <kdots-checkout> <output-dir>}")"
 out="$(readlink -m "${2:?usage: build-repo <kdots-checkout> <output-dir>}")"
 kansora="$(dirname "$(readlink -f "$0")")/.."
+FEDORA_VERSION="${FEDORA_VERSION:-45}"
 
 rm -rf "${out}"
 mkdir -p "${out}/srpm" "${out}/repo"
@@ -28,6 +35,47 @@ for srpm in "${out}"/srpm/*.src.rpm; do
     rpmbuild --rebuild "$srpm" --define "_rpmdir ${out}/rpms" --define "_topdir ${out}/rpmbuild"
 done
 
-find "${out}/rpms" -name '*.rpm' -exec cp -t "${out}/repo" {} +
+# identity <release>: build kansora-release-identity for that Fedora release from
+# its fedora-release-identity-basic (version and os-release). Prints the RPM path.
+identity() {
+    local rel="$1" tmp version release
+    tmp="$(mktemp -d)"
+    dnf -q download --releasever="$rel" --repo=fedora --repo=updates \
+        --setopt=cachedir="${out}/dnf-cache" --destdir="$tmp" fedora-release-identity-basic \
+        >/dev/null 2>&1 || { rm -rf "$tmp"; return 1; }
+    local basic=("$tmp"/fedora-release-identity-basic-*.rpm)
+    read -r version release < <(rpm -qp --qf '%{VERSION} %{RELEASE}\n' "${basic[0]}")
+    rpm2cpio "${basic[0]}" | cpio -i --quiet --to-stdout ./usr/lib/os-release > "$tmp/fedora-os-release"
+    rpmbuild -bb "$kansora/identity/kansora-release-identity.spec" --quiet \
+        --define "_sourcedir $tmp" --define "_rpmdir ${out}/identity/$rel" \
+        --define "_topdir ${out}/rpmbuild-identity" \
+        --define "fedora_version $version" --define "fedora_release $release" \
+        --define "kansora_build $(git -C "$kansora" rev-list --count HEAD)" >&2
+    rm -rf "$tmp"
+    find "${out}/identity/$rel" -name 'kansora-release-identity-*.rpm'
+}
+
+common=()
+mapfile -t common < <(find "${out}/rpms" -name '*.rpm')
+
+# The current release must have an identity; the next one only once Fedora has it
+releases=("$FEDORA_VERSION")
+declare -A ids
+ids[$FEDORA_VERSION]="$(identity "$FEDORA_VERSION")" \
+    || { echo "build-repo: no fedora-release-identity-basic for Fedora $FEDORA_VERSION" >&2; exit 1; }
+next=$((FEDORA_VERSION + 1))
+if id="$(identity "$next")"; then
+    releases+=("$next"); ids[$next]="$id"
+else
+    echo "build-repo: Fedora $next isn't available yet, building for $FEDORA_VERSION only"
+fi
+
+# Root repo first: createrepo_c recurses, so it must run before the subdirectories exist
+cp -t "${out}/repo" "${common[@]}" "${ids[$FEDORA_VERSION]}"
 createrepo_c "${out}/repo"
+for rel in "${releases[@]}"; do
+    mkdir -p "${out}/repo/$rel"
+    cp -t "${out}/repo/$rel" "${common[@]}" "${ids[$rel]}"
+    createrepo_c "${out}/repo/$rel"
+done
 ls -1 "${out}/repo"

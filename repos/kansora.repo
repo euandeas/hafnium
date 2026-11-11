@@ -2,7 +2,8 @@
 # served from GitHub Pages: https://github.com/euandeas/kansora
 [kansora]
 name=Kansora
-baseurl=https://euandeas.github.io/kansora/repo/
+# One repo per Fedora release: kansora-release-identity must match that release
+baseurl=https://euandeas.github.io/kansora/repo/$releasever/
 type=rpm-md
 skip_if_unavailable=True
 # Unsigned packages, fetched over HTTPS from your own GitHub Pages site.
