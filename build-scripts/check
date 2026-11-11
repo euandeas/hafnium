@@ -7,7 +7,8 @@
 #   resolve    dry-run the live image's package set (live/kansora.kiwi) against the
 #              real repos plus the freshly built RPMs. Installs copy that image, so
 #              this is the installed system; again with kansora-nvidia, which
-#              `kansora enable-nvidia` adds
+#              `kansora enable-nvidia` adds. Also checks that os-release comes from
+#              kansora-release-identity, built for Fedora's current fedora-release
 #   dotfiles   run kansora-dots in a throwaway $HOME (mise layer, seeds, DMS
 #              defaults), then `niri validate` the result
 #   lint       shellcheck, JSON syntax, Justfile syntax
@@ -146,6 +147,12 @@ check_resolve() {
             "${install[@]}" "${built[@]}" >"$log" 2>&1
         if grep -q 'Operation aborted by the user' "$log"; then
             grep -E 'Total size of inbound|^Install +[0-9]+ packages' "$log" | sed "s/^/resolve: $v: /"
+            # os-release must come from Kansora's identity, not Fedora's
+            grep -qE '^ kansora-release-identity ' "$log" \
+                || { echo "resolve: $v doesn't install kansora-release-identity"; ok=1; }
+            if grep -qE '^ fedora-release-identity-basic ' "$log"; then
+                echo "resolve: $v installs fedora-release-identity-basic alongside Kansora's identity"; ok=1
+            fi
             local pkg
             for pkg in "${UNWANTED[@]}"; do
                 if grep -qE "^ $pkg " "$log"; then
@@ -159,6 +166,21 @@ check_resolve() {
             ok=1
         fi
     done
+    # fedora-release-common requires an identity of its exact version-release; a
+    # mismatch holds back Fedora's release updates until the next rebuild
+    local want have
+    want="$(dnf repoquery -q --releasever="$FEDORA_VERSION" --setopt=reposdir="$reposdir" \
+        --setopt=cachedir="$work/dnf-cache" --latest-limit=1 --qf '%{version}-%{release}\n' \
+        fedora-release-common 2>/dev/null | tail -1)"
+    have="$(rpm -qp --provides "$work"/build/repo/kansora-release-identity-*.rpm 2>/dev/null \
+        | sed -n 's/^fedora-release-identity = //p')"
+    if [[ -n "$want" && "$want" == "$have" ]]; then
+        echo "resolve: kansora-release-identity matches fedora-release-common $want"
+    else
+        echo "resolve: kansora-release-identity provides fedora-release-identity = ${have:-nothing}," \
+            "but fedora-release-common ${want:-(not found)} needs exactly its own version"
+        ok=1
+    fi
     return $ok
 }
 

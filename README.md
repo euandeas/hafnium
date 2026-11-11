@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="branding/kansora-dark.svg">
-    <img src="branding/kansora.svg" alt="Kansora logo: a K drawn in two strokes" width="96">
+    <source media="(prefers-color-scheme: dark)" srcset="files/usr/share/kansora/branding/kansora-dark.svg">
+    <img src="files/usr/share/kansora/branding/kansora.svg" alt="Kansora logo: a K drawn in two strokes" width="96">
   </picture>
 </p>
 
