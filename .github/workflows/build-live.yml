@@ -1,8 +1,13 @@
 name: Build live ISO
 
-# The Kansora live ISO (kiwi, live/kansora.kiwi). It installs the kansora and
-# kansora-live packages from the published package repo, so run "Build package
-# repo" first when changing those.
+# The Kansora live ISO (kiwi, live/kansora.kiwi). On main it installs the kansora
+# and kansora-live packages from the published package repo (run "Build package
+# repo" first when changing those) and publishes to the "latest" release.
+#
+# Test ISO for a branch: run it by hand on that branch. It then builds the
+# packages from the branch (plus kdots at kdots_ref) and installs those, and
+# uploads the ISO as a workflow artifact instead of publishing it:
+#   gh workflow run build-live.yml -R euandeas/kansora --ref <branch> -f kdots_ref=<branch>
 
 on:
   push:
@@ -16,10 +21,15 @@ on:
     # current packages and a broken dependency shows up the next morning
     - cron: "0 5 * * *"
   workflow_dispatch:
+    inputs:
+      kdots_ref:
+        description: "kdots branch for a test ISO (ignored on main)"
+        default: main
 
-# A newer build supersedes an older one: they all upload to the same release
+# A newer build supersedes an older one of the same branch (main's all upload to
+# the same release); a test build never cancels main's
 concurrency:
-  group: build-live
+  group: build-live-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -38,15 +48,49 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # build-repo numbers releases by commit count
+          fetch-depth: ${{ github.ref == 'refs/heads/main' && 1 || 0 }}
+
+      - name: Checkout kdots (test ISO)
+        if: github.ref != 'refs/heads/main'
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository_owner }}/kdots
+          ref: ${{ inputs.kdots_ref || 'main' }}
+          path: _kdots
+          fetch-depth: 0
 
       - name: Build
+        env:
+          TEST_BUILD: ${{ github.ref != 'refs/heads/main' && '1' || '' }}
         run: |
-          sudo podman run --rm --privileged \
+          sudo podman run --rm --privileged -e TEST_BUILD \
             -v "$PWD:/src:Z" -w /src \
             registry.fedoraproject.org/fedora:45 \
-            bash -c 'dnf install -y --setopt=install_weak_deps=False kiwi kiwi-systemdeps distribution-gpg-keys \
-                     && build-scripts/build-live out'
+            bash -c 'set -e
+                     dnf install -y --setopt=install_weak_deps=False kiwi kiwi-systemdeps distribution-gpg-keys
+                     if [ -n "$TEST_BUILD" ]; then
+                         dnf install -y --setopt=install_weak_deps=False \
+                             git-core make rpm-build systemd-rpm-macros createrepo_c cpio
+                         git config --global --add safe.directory "*"
+                         build-scripts/build-repo _kdots out/pkgs
+                         export KANSORA_REPO=out/pkgs/repo
+                     fi
+                     build-scripts/build-live out'
           ls -la out
+
+      - name: Upload the test ISO
+        if: github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: kansora-live-test-${{ github.ref_name }}
+          path: |
+            out/kansora-live-*.iso
+            out/kansora-live-*.iso.sha256
+          compression-level: 0
+          retention-days: 5
+          if-no-files-found: error
 
       - name: Publish to the rolling "latest" release
         if: github.ref == 'refs/heads/main'
